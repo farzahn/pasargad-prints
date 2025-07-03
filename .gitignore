@@ -19,9 +19,12 @@ build/
 db.sqlite3
 media/
 staticfiles/
+
+# Environment files
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Node
 node_modules/

@@ -2,6 +2,20 @@
 
 A modern, full-stack e-commerce platform for unique 3D-printed products built with Django REST Framework and React.
 
+## ⚠️ Important: Environment Setup
+
+Before running the application, you must create a `.env` file with your configuration:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and add your own:
+- Stripe API keys (get test keys from https://stripe.com/docs/keys)
+- Email credentials
+- Database password (for production)
+- Django secret key (generate a new one for production)
+
 ## 🚀 Features
 
 ### Frontend

@@ -1,0 +1,104 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Pasargad Prints Admin{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Pasargad Prints Dashboard</h1>
+    
+    <!-- Statistics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; text-align: center;">
+            <h3 style="margin: 0; color: #0066cc;">Total Products</h3>
+            <p style="font-size: 2em; margin: 10px 0; font-weight: bold;">{{ total_products }}</p>
+            <small>{{ active_products }} active</small>
+        </div>
+        
+        <div style="background: #fff0f0; padding: 20px; border-radius: 8px; text-align: center;">
+            <h3 style="margin: 0; color: #cc0000;">Out of Stock</h3>
+            <p style="font-size: 2em; margin: 10px 0; font-weight: bold;">{{ out_of_stock }}</p>
+            <small>Need restocking</small>
+        </div>
+        
+        <div style="background: #fff8e0; padding: 20px; border-radius: 8px; text-align: center;">
+            <h3 style="margin: 0; color: #cc6600;">Low Stock</h3>
+            <p style="font-size: 2em; margin: 10px 0; font-weight: bold;">{{ low_stock }}</p>
+            <small>Less than 10 units</small>
+        </div>
+        
+        <div style="background: #f0fff0; padding: 20px; border-radius: 8px; text-align: center;">
+            <h3 style="margin: 0; color: #006600;">Recent Orders</h3>
+            <p style="font-size: 2em; margin: 10px 0; font-weight: bold;">{{ recent_orders_count }}</p>
+            <small>${{ recent_revenue|floatformat:2 }} revenue</small>
+        </div>
+    </div>
+    
+    <!-- Low Stock Alert -->
+    {% if low_stock_products %}
+    <div style="background: #fff8e0; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h2 style="color: #cc6600; margin-top: 0;">⚠️ Low Stock Alert</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 10px;">Product</th>
+                    <th style="text-align: left; padding: 10px;">SKU</th>
+                    <th style="text-align: center; padding: 10px;">Stock</th>
+                    <th style="text-align: center; padding: 10px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in low_stock_products %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">{{ product.name }}</td>
+                    <td style="padding: 10px;">{{ product.sku }}</td>
+                    <td style="text-align: center; padding: 10px; font-weight: bold; color: #cc6600;">{{ product.stock_quantity }}</td>
+                    <td style="text-align: center; padding: 10px;">
+                        <a href="{% url 'admin:products_product_change' product.id %}" class="button">Update Stock</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Out of Stock Products -->
+    {% if out_of_stock_products %}
+    <div style="background: #fff0f0; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h2 style="color: #cc0000; margin-top: 0;">🚫 Out of Stock Products</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 10px;">Product</th>
+                    <th style="text-align: left; padding: 10px;">SKU</th>
+                    <th style="text-align: center; padding: 10px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in out_of_stock_products %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">{{ product.name }}</td>
+                    <td style="padding: 10px;">{{ product.sku }}</td>
+                    <td style="text-align: center; padding: 10px;">
+                        <a href="{% url 'admin:products_product_change' product.id %}" class="button">Restock</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Quick Actions -->
+    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+        <h2 style="margin-top: 0;">Quick Actions</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{% url 'admin:products_product_add' %}" class="button default">➕ Add New Product</a>
+            <a href="{% url 'admin:products_product_changelist' %}" class="button">📦 Manage Products</a>
+            <a href="{% url 'admin:products_category_changelist' %}" class="button">📁 Manage Categories</a>
+            <a href="{% url 'admin:orders_order_changelist' %}" class="button">🛒 View Orders</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{{ company_name }} - Order Confirmation
+
+Thank You for Your Order!
+
+Dear {{ customer_name }},
+
+We're excited to confirm that we've received your order. Your beautiful Persian miniature art pieces will be carefully prepared and shipped to you soon.
+
+ORDER INFORMATION
+-----------------
+Order Number: #{{ order_number }}
+Order Date: {{ created_at|date:"F j, Y, g:i a" }}
+Payment Status: {% if order.payment_status == 'paid' %}Paid{% else %}{{ order.payment_status|title }}{% endif %}
+
+ORDER DETAILS
+-------------
+{% for item in order_items %}
+{{ item.product.name }}
+Quantity: {{ item.quantity }} × ${{ item.price|floatformat:2 }} = ${{ item.subtotal|floatformat:2 }}
+{% endfor %}
+
+Total Amount: ${{ total_amount|floatformat:2 }}
+
+WHAT'S NEXT?
+------------
+1. We'll carefully package your artwork to ensure it arrives in perfect condition
+2. You'll receive a shipping confirmation email with tracking information
+3. Your order will be delivered within 5-7 business days
+
+View your order details: {{ frontend_url }}/orders/{{ order.id }}
+
+Questions about your order? Contact us at {{ support_email }}
+
+Thank you for choosing {{ company_name }}!
+
+---
+© {{ current_year }} {{ company_name }}. All rights reserved.
+Visit our website: {{ company_url }}

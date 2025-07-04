@@ -3,13 +3,17 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import type { RootState, AppDispatch } from '../store/index'
 import { logout } from '../store/slices/authSlice'
+import { selectWishlistCount } from '../store/slices/wishlistSlice'
 import { useClickOutside } from '../hooks/useClickOutside'
+import MobileMenu from './MobileMenu'
+import type { AdminUser } from '../types'
 
 const Header = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user, isLoading } = useSelector((state: RootState) => state.auth)
   const { cart } = useSelector((state: RootState) => state.cart)
+  const wishlistCount = useSelector(selectWishlistCount)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   
@@ -55,6 +59,20 @@ const Header = () => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
+            {/* Wishlist */}
+            {isAuthenticated && (
+              <Link to="/wishlist" className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {/* Cart */}
             <Link to="/cart" className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,11 +96,17 @@ const Header = () => {
                   aria-label="User menu"
                 >
                   <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary-600 font-medium text-sm">
-                      {user?.first_name?.[0]?.toUpperCase() || 'U'}
-                    </span>
+                    {isLoading || !user ? (
+                      <span className="text-primary-600 font-medium text-sm">...</span>
+                    ) : (
+                      <span className="text-primary-600 font-medium text-sm">
+                        {user.first_name?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    )}
                   </div>
-                  <span className="hidden sm:block">{user?.first_name}</span>
+                  <span className="hidden sm:block">
+                    {isLoading || !user ? 'Loading...' : (user.first_name || user.username || 'User')}
+                  </span>
                 </button>
 
                 {isUserDropdownOpen && (
@@ -100,6 +124,25 @@ const Header = () => {
                     >
                       Profile
                     </Link>
+                    <Link
+                      to="/wishlist"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                      role="menuitem"
+                    >
+                      My Wishlist
+                    </Link>
+                    {/* Admin Link - Show only for admin users */}
+                    {((user as AdminUser)?.is_staff || (user as AdminUser)?.is_superuser) && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        role="menuitem"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -130,38 +173,30 @@ const Header = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:text-primary-600"
+              className="md:hidden p-2 text-gray-700 hover:text-primary-600 rounded-md hover:bg-gray-100"
               aria-expanded={isMobileMenuOpen}
               aria-label="Mobile menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
         </div>
 
         {/* Mobile menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
-            <nav className="flex flex-col space-y-2">
-              <Link 
-                to="/" 
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link 
-                to="/products" 
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Products
-              </Link>
-            </nav>
-          </div>
-        )}
+        <MobileMenu
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          cartItemCount={cartItemCount}
+          onLogout={handleLogout}
+        />
       </div>
     </header>
   )

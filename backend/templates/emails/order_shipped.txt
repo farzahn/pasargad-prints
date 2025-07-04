@@ -1,0 +1,50 @@
+{{ company_name }} - Your Order Has Been Shipped!
+
+Great News! Your Order Has Been Shipped!
+
+Dear {{ customer_name }},
+
+We're thrilled to let you know that your Persian miniature art pieces have been carefully packaged and are now on their way to you!
+
+{% if order.tracking_number %}
+TRACKING INFORMATION
+-------------------
+Tracking Number: {{ order.tracking_number }}
+Use this number to track your shipment with the carrier.
+{% endif %}
+
+SHIPMENT DETAILS
+----------------
+Order Number: #{{ order_number }}
+Shipped Date: {{ status_changed_at|date:"F j, Y" }}
+Estimated Delivery: 3-5 business days
+
+{% if order.shipping_address %}
+SHIPPING TO:
+{{ order.shipping_address.street_address }}
+{% if order.shipping_address.apartment %}{{ order.shipping_address.apartment }}{% endif %}
+{{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.zip_code }}
+{{ order.shipping_address.country }}
+{% endif %}
+
+WHAT TO EXPECT
+--------------
+1. Your package is handled with care throughout its journey
+2. You can track your shipment using the tracking number above
+3. Your artwork will arrive in protective packaging
+4. Carefully unpack and enjoy your beautiful Persian art!
+
+DELIVERY TIPS:
+- Please ensure someone is available to receive the package
+- Check the packaging for any damage before signing
+- Store your artwork in a cool, dry place away from direct sunlight
+
+View your order details: {{ frontend_url }}/orders/{{ order.id }}
+
+Questions about your shipment? Contact us at {{ support_email }}
+
+Thank you for choosing {{ company_name }}!
+
+---
+© {{ current_year }} {{ company_name }}. All rights reserved.
+Visit our website: {{ company_url }}

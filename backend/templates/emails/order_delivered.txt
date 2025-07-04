@@ -1,0 +1,35 @@
+{{ company_name }}
+Your Order Has Been Delivered!
+
+Dear {{ customer_name }},
+
+Great news! Your order #{{ order_number }} has been successfully delivered.
+
+We hope you're delighted with your purchase. Your satisfaction is our top priority.
+
+ORDER SUMMARY
+-------------
+Order Number: {{ order_number }}
+Delivered On: {{ delivered_at|date:"F j, Y" }}
+Total Amount: ${{ total_amount|floatformat:2 }}
+
+ORDER ITEMS
+-----------
+{% for item in order_items %}
+- {{ item.product_name }} (Qty: {{ item.quantity }}) - ${{ item.total_price|floatformat:2 }}
+{% endfor %}
+
+HOW WAS YOUR EXPERIENCE?
+------------------------
+We'd love to hear your feedback! Please take a moment to review your purchase:
+{{ review_url }}
+
+If you have any questions or concerns about your order, please don't hesitate to contact our customer support team at {{ support_email }}.
+
+Thank you for choosing {{ company_name }}!
+
+Best regards,
+The {{ company_name }} Team
+
+© {{ current_year }} {{ company_name }}. All rights reserved.
+Visit our website: {{ company_url }}

@@ -28,7 +28,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-g#8_3y58dah+oz3y+z%d^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io', 'backend']
 
 
 # Application definition
@@ -40,25 +40,50 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Required for allauth
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django.contrib.postgres',  # For full-text search
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.github',
+    # Local apps
     'users',
     'products',
     'orders',
     'cart',
     'payments',
+    'wishlist',
+    'recommendations',
+    'promotions',
+    'analytics',
+    'utils.apps.UtilsConfig',
+    'social_auth',
+    'referral_system',
+    'review_system',
+    'social_sharing',
+    'notifications',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'utils.middleware.CacheMiddleware',
+    'utils.middleware.PerformanceMonitoringMiddleware',
+    'analytics.middleware.AnalyticsMiddleware',
 ]
 
 ROOT_URLCONF = 'pasargad_prints.urls'
@@ -85,16 +110,43 @@ WSGI_APPLICATION = 'pasargad_prints.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='pasargad_prints'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='postgres'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+# Try PostgreSQL first, fallback to SQLite for development
+try:
+    import psycopg2
+    # Test PostgreSQL connection
+    conn = psycopg2.connect(
+        host=config('DB_HOST', default='localhost'),
+        database=config('DB_NAME', default='pasargad_prints'),
+        user=config('DB_USER', default='postgres'),
+        password=config('DB_PASSWORD', default='postgres'),
+        port=config('DB_PORT', default='5432')
+    )
+    conn.close()
+    
+    # PostgreSQL is available
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='pasargad_prints'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
     }
-}
+    
+    DATABASE_TYPE = 'postgresql'
+    
+except (ImportError, psycopg2.OperationalError):
+    # PostgreSQL not available, use SQLite for development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    
+    DATABASE_TYPE = 'sqlite'
 
 
 # Password validation
@@ -146,17 +198,41 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-# Django REST Framework
+# Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'utils.rate_limiting.BurstRateThrottle',
+        'utils.rate_limiting.SustainedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1000/hour',     # Increased for development
+        'user': '5000/hour',     # Increased for development
+        'burst': '100/minute',   # Increased for development
+        'sustained': '10000/day', # Increased for development
+    },
 }
+
+# Removed duplicate REST_FRAMEWORK configuration
 
 # Simple JWT
 SIMPLE_JWT = {
@@ -188,11 +264,15 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@pasargadprints.com')
 
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Frontend URL for emails and links
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
 # Session settings
 SESSION_COOKIE_AGE = 600  # 10 minutes
@@ -206,3 +286,355 @@ X_FRAME_OPTIONS = 'DENY'
 # Add ngrok bypass header if present
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{levelname}] {asctime} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'pasargad_prints.log'),
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'errors.log'),
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'payment_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'payments.log'),
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['error_file', 'mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'payments': {
+            'handlers': ['console', 'payment_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'orders': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'cart': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'utils.email': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+}
+
+# Create logs directory if it doesn't exist
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+# Cache Configuration
+# For development, use local memory cache to avoid Redis dependency
+# In production, this should be configured to use Redis
+USE_REDIS_CACHE = config('USE_REDIS_CACHE', default=False, cast=bool)
+
+if USE_REDIS_CACHE:
+    # Production Redis configuration
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+                'CONNECTION_POOL_CLASS_KWARGS': {
+                    'max_connections': 50,
+                    'retry_on_timeout': True,
+                },
+                'MAX_CONNECTIONS': 50,
+                'KEY_PREFIX': 'pasargad',
+                'VERSION': 1,
+                'TIMEOUT': 300,  # 5 minutes default timeout
+                'COMPRESS_MIN_LEN': 10,
+                'COMPRESS_LEVEL': 6,
+            }
+        },
+        'session': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/2'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'KEY_PREFIX': 'session',
+                'TIMEOUT': 86400,  # 24 hours
+            }
+        },
+        'api': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/3'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'KEY_PREFIX': 'api',
+                'TIMEOUT': 60,  # 1 minute for API responses
+            }
+        }
+    }
+    
+    # Use Redis for session storage
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'session'
+    
+else:
+    # Development configuration using local memory cache
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 4,
+            }
+        },
+        'session': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'session-cache',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 4,
+            }
+        },
+        'api': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'api-cache',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 4,
+            }
+        }
+    }
+    
+    # Use database for session storage when Redis is not available
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Session configuration is handled in the cache configuration above
+
+# Celery Configuration
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://127.0.0.1:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
+CELERY_BEAT_SCHEDULE = {
+    'check-low-stock': {
+        'task': 'products.tasks.check_low_stock',
+        'schedule': 3600.0,  # Every hour
+    },
+    'cleanup-expired-sessions': {
+        'task': 'utils.tasks.cleanup_expired_sessions',
+        'schedule': 86400.0,  # Every day
+    },
+    'process-abandoned-carts': {
+        'task': 'cart.tasks.process_abandoned_carts',
+        'schedule': 86400.0,  # Every day
+    },
+}
+
+# CDN Configuration
+USE_CDN = config('USE_CDN', default=False, cast=bool)
+CDN_URL = config('CDN_URL', default='')
+CDN_STATIC_URL = f'{CDN_URL}/static/' if USE_CDN else STATIC_URL
+CDN_MEDIA_URL = f'{CDN_URL}/media/' if USE_CDN else MEDIA_URL
+
+# AWS S3 Configuration (for media storage)
+USE_S3 = config('USE_S3', default=False, cast=bool)
+if USE_S3:
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
+    
+    # Media files
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+    
+    # Static files with WhiteNoise for local serving
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Django Allauth Configuration
+SITE_ID = 1
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Allauth settings
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https' if not DEBUG else 'http'
+ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
+ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300
+
+# Social account settings
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_ADAPTER = 'social_auth.adapters.CustomSocialAccountAdapter'
+
+# Social provider settings
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'APP': {
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INIT_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'first_name',
+            'last_name',
+            'middle_name',
+            'name',
+            'name_format',
+            'picture',
+            'short_name',
+            'email',
+        ],
+        'EXCHANGE_TOKEN': True,
+        'LOCALE_FUNC': lambda request: 'en_US',
+        'VERIFIED_EMAIL': False,
+        'VERSION': 'v15.0',
+        'APP': {
+            'client_id': config('FACEBOOK_CLIENT_ID', default=''),
+            'secret': config('FACEBOOK_CLIENT_SECRET', default=''),
+        }
+    },
+    'github': {
+        'SCOPE': [
+            'user:email',
+        ],
+        'APP': {
+            'client_id': config('GITHUB_CLIENT_ID', default=''),
+            'secret': config('GITHUB_CLIENT_SECRET', default=''),
+        }
+    }
+}
+
+# Notification settings
+NOTIFICATION_SETTINGS = {
+    'ENABLE_EMAIL_NOTIFICATIONS': True,
+    'ENABLE_IN_APP_NOTIFICATIONS': True,
+    'ENABLE_REAL_TIME_NOTIFICATIONS': True,
+    'EMAIL_BATCH_SIZE': 100,
+    'EMAIL_BATCH_DELAY': 300,  # 5 minutes
+    'NOTIFICATION_RETENTION_DAYS': 90,
+}
+
+# Social sharing settings
+SOCIAL_SHARING_SETTINGS = {
+    'ENABLE_FACEBOOK_SHARING': True,
+    'ENABLE_TWITTER_SHARING': True,
+    'ENABLE_LINKEDIN_SHARING': True,
+    'ENABLE_PINTEREST_SHARING': True,
+    'ENABLE_WHATSAPP_SHARING': True,
+    'DEFAULT_SHARE_IMAGE': '/static/images/default-share-image.png',
+    'SITE_NAME': 'Pasargad Prints',
+    'SITE_DESCRIPTION': 'Premium 3D Printing Services',
+}
+
+# Referral system settings
+REFERRAL_SETTINGS = {
+    'REFERRAL_CODE_LENGTH': 8,
+    'REFERRAL_CODE_EXPIRY_DAYS': 365,
+    'REFERRER_REWARD_AMOUNT': 10.00,  # USD
+    'REFEREE_REWARD_AMOUNT': 5.00,   # USD
+    'MINIMUM_ORDER_VALUE': 25.00,    # USD
+    'MAX_REFERRALS_PER_USER': 50,
+    'REWARD_EXPIRY_DAYS': 180,
+}

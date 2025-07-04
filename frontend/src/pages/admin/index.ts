@@ -1,0 +1,5 @@
+export { default as DashboardPage } from './DashboardPage'
+export { default as OrdersPage } from './OrdersPage'
+export { default as ProductsPage } from './ProductsPage'
+export { default as UsersPage } from './UsersPage'
+export { default as ReportsPage } from './ReportsPage'

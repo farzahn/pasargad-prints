@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import api from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { clearCart } from '../store/slices/cartSlice'
-import type { AppDispatch } from '../store/index'
+import { clearCart, clearCartState, fetchCart } from '../store/slices/cartSlice'
+import type { AppDispatch, RootState } from '../store/index'
 
 interface OrderInfo {
   order_id: number
   order_number: string
+  email?: string
 }
 
 const CheckoutSuccessPage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
   const [isLoading, setIsLoading] = useState(true)
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -38,10 +40,23 @@ const CheckoutSuccessPage = () => {
         setOrderInfo({
           order_id: response.data.order_id,
           order_number: response.data.order_number,
+          email: response.data.email,
         })
         
         // Clear the cart after successful payment
-        dispatch(clearCart())
+        try {
+          // Use async thunk to clear cart on backend
+          await dispatch(clearCart()).unwrap()
+        } catch (clearError) {
+          // If clearing fails (maybe already cleared by webhook), that's okay
+          console.log('Cart already cleared or error clearing:', clearError)
+        }
+        
+        // Also clear the local Redux state immediately
+        dispatch(clearCartState())
+        
+        // Fetch fresh cart state to ensure UI is in sync
+        dispatch(fetchCart())
       } else if (response.data.status === 'pending') {
         // Payment is still processing
         setTimeout(() => verifyPayment(sessionId), 2000) // Check again in 2 seconds
@@ -112,12 +127,21 @@ const CheckoutSuccessPage = () => {
         )}
 
         <div className="space-y-3">
-          <Link
-            to="/profile"
-            className="block w-full bg-primary-600 text-white py-3 px-4 rounded-md font-semibold hover:bg-primary-700 transition-colors"
-          >
-            View Order Details
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to="/profile"
+              className="block w-full bg-primary-600 text-white py-3 px-4 rounded-md font-semibold hover:bg-primary-700 transition-colors"
+            >
+              View Order Details
+            </Link>
+          ) : (
+            <Link
+              to={`/orders/track?order_number=${orderInfo?.order_number}&email=${orderInfo?.email || ''}`}
+              className="block w-full bg-primary-600 text-white py-3 px-4 rounded-md font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Track Your Order
+            </Link>
+          )}
           <Link
             to="/products"
             className="block w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-md font-semibold hover:bg-gray-50 transition-colors"
@@ -131,10 +155,26 @@ const CheckoutSuccessPage = () => {
           <ul className="text-sm text-blue-700 space-y-1 text-left">
             <li>• You'll receive an order confirmation email</li>
             <li>• We'll notify you when your order ships</li>
-            <li>• Track your order in your account</li>
+            {isAuthenticated ? (
+              <li>• Track your order in your account</li>
+            ) : (
+              <li>• Use your order number and email to track your order</li>
+            )}
             <li>• Contact support if you have any questions</li>
           </ul>
         </div>
+        
+        {!isAuthenticated && orderInfo && (
+          <div className="mt-4 p-4 bg-yellow-50 rounded-md border border-yellow-200">
+            <h4 className="font-medium text-yellow-900 mb-1">Save Your Order Information</h4>
+            <p className="text-sm text-yellow-700">
+              Order Number: <span className="font-mono font-semibold">{orderInfo.order_number}</span>
+            </p>
+            <p className="text-xs text-yellow-600 mt-1">
+              Keep this number to track your order status
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

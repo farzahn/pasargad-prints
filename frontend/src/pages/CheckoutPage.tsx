@@ -149,18 +149,18 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Order Summary */}
         <div className="order-2 lg:order-1">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
             
             <div className="space-y-4 mb-6">
               {cart.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-4">
+                <div key={item.id} className="flex items-center gap-3">
                   {item.product.main_image ? (
                     <img
                       src={item.product.main_image}
@@ -175,9 +175,9 @@ const CheckoutPage = () => {
                     </div>
                   )}
                   
-                  <div className="flex-1">
-                    <h3 className="font-medium">{item.product.name}</h3>
-                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm sm:text-base truncate">{item.product.name}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Qty: {item.quantity}</p>
                   </div>
                   
                   <div className="text-right">
@@ -212,7 +212,7 @@ const CheckoutPage = () => {
 
         {/* Checkout Info */}
         <div className="order-1 lg:order-2">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-lg font-semibold mb-4">Checkout Information</h2>
             
             <div className="mb-6">

@@ -36,9 +36,25 @@ class Product(models.Model):
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Full-text search field - use TextField for SQLite compatibility
+    search_vector = models.TextField(null=True, blank=True, editable=False)
+    
+    # Low stock threshold
+    low_stock_threshold = models.PositiveIntegerField(
+        default=5,
+        help_text="Alert when stock falls below this level"
+    )
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            # GinIndex removed for SQLite compatibility
+            models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['sku']),
+            models.Index(fields=['price']),
+            models.Index(fields=['stock_quantity']),
+        ]
 
     def __str__(self):
         return self.name
@@ -46,6 +62,10 @@ class Product(models.Model):
     @property
     def is_in_stock(self):
         return self.stock_quantity > 0
+    
+    @property
+    def is_low_stock(self):
+        return 0 < self.stock_quantity <= self.low_stock_threshold
 
     @property
     def main_image(self):
@@ -53,6 +73,17 @@ class Product(models.Model):
         if main_image:
             return main_image.image_url or main_image.image.url if main_image.image else None
         return None
+    
+    def update_search_vector(self):
+        """Update the search vector field for full-text search."""
+        from django.contrib.postgres.search import SearchVector
+        self.search_vector = (
+            SearchVector('name', weight='A') +
+            SearchVector('description', weight='B') +
+            SearchVector('category__name', weight='C') +
+            SearchVector('material', weight='D')
+        )
+        self.save(update_fields=['search_vector'])
 
 
 class ProductImage(models.Model):

@@ -105,6 +105,7 @@ def remove_from_cart(request, item_id):
 @permission_classes([permissions.AllowAny])
 def clear_cart(request):
     cart = get_or_create_cart(request)
+    # Delete all items - this is idempotent (safe to call multiple times)
     cart.items.all().delete()
     
     cart_serializer = CartSerializer(cart, context={'request': request})

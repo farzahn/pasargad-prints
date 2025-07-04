@@ -5,6 +5,9 @@ import type { AppDispatch, RootState } from '../store/index'
 import { fetchFeaturedProducts } from '../store/slices/productsSlice'
 import ProductCard from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
+import BannerSystem from '../components/banners/BannerSystem'
+import SEO from '../components/SEO'
+import { OrganizationStructuredData, WebsiteStructuredData } from '../components/StructuredData'
 
 const HomePage = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -16,7 +19,17 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* Hero Section */}
+      <SEO 
+        title="Pasargad Prints - Premium 3D Printing Store"
+        description="Shop high-quality 3D printers, filaments, resins, and accessories. Expert 3D printing services and fast shipping. Your one-stop shop for all 3D printing needs."
+      />
+      <OrganizationStructuredData />
+      <WebsiteStructuredData />
+      
+      {/* Top Banners (Announcements) */}
+      <BannerSystem position="top" />
+      
+      {/* Hero Section - Will be replaced by hero banners if available */}
       <section className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center">
@@ -71,6 +84,9 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Middle Banners (Promotions/Sales) */}
+      <BannerSystem position="middle" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" />
+
       {/* Featured Products */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,6 +114,9 @@ const HomePage = () => {
           )}
         </div>
       </section>
+
+      {/* Bottom Banners */}
+      <BannerSystem position="bottom" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" />
 
       {/* CTA Section */}
       <section className="bg-secondary-50 py-16">

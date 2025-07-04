@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '../store/index'
 import { addToCart } from '../store/slices/cartSlice'
+import WishlistButton from './WishlistButton'
+import CompareButton from './CompareButton'
+import ProductQuickView from './ProductQuickView'
+import LazyImage from './LazyImage'
 import type { Product } from '../types'
 
 interface ProductCardProps {
@@ -10,19 +15,33 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const dispatch = useDispatch<AppDispatch>()
+  const [showQuickView, setShowQuickView] = useState(false)
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
+    
+    // Check if product is in stock
+    if (!product.is_in_stock) {
+      alert('This product is currently out of stock')
+      return
+    }
+    
     dispatch(addToCart({ product_id: product.id, quantity: 1 }))
   }
 
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowQuickView(true)
+  }
+
   return (
-    <Link to={`/products/${product.id}`} className="group">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-        {/* Product Image */}
-        <div className="aspect-square bg-gray-100 relative overflow-hidden">
+    <>
+      <Link to={`/products/${product.id}`} className="group">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+          {/* Product Image */}
+          <div className="aspect-square bg-gray-100 relative overflow-hidden group">
           {product.main_image ? (
-            <img
+            <LazyImage
               src={product.main_image}
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -37,7 +56,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           
           {/* Stock Badge */}
           {!product.is_in_stock && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
+            <div className="absolute bottom-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
               Out of Stock
             </div>
           )}
@@ -48,6 +67,22 @@ const ProductCard = ({ product }: ProductCardProps) => {
               Featured
             </div>
           )}
+          
+          {/* Action Buttons */}
+          <div className="absolute top-2 right-2 flex flex-col gap-2">
+            <WishlistButton product={product} size="sm" />
+            <CompareButton product={product} size="sm" />
+          </div>
+          
+          {/* Quick View Button - shows on hover */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+            <button
+              onClick={handleQuickView}
+              className="bg-white text-gray-900 px-4 py-2 rounded-md font-medium opacity-0 group-hover:opacity-100 transform scale-95 group-hover:scale-100 transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Quick View
+            </button>
+          </div>
         </div>
 
         {/* Product Info */}
@@ -94,6 +129,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </div>
     </Link>
+    
+    {/* Quick View Modal */}
+    <ProductQuickView
+      productId={product.id}
+      isOpen={showQuickView}
+      onClose={() => setShowQuickView(false)}
+    />
+    </>
   )
 }
 

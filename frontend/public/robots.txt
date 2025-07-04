@@ -1,0 +1,18 @@
+# Robots.txt for Pasargad Prints
+
+User-agent: *
+Allow: /
+
+# Directories
+Allow: /products/
+Allow: /cart/
+Allow: /checkout/
+Allow: /profile/
+Allow: /wishlist/
+
+# Disallow admin and API paths
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://pasargadprints.com/sitemap.xml

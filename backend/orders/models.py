@@ -21,7 +21,8 @@ class Order(models.Model):
         ('pickup', 'Local Pickup'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
+    session_key = models.CharField(max_length=40, blank=True, help_text='For guest checkout tracking')
     order_number = models.CharField(max_length=32, unique=True)
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='pending')
     fulfillment_method = models.CharField(max_length=20, choices=FULFILLMENT_CHOICES, default='shipping')
@@ -30,7 +31,17 @@ class Order(models.Model):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Promotion code used
+    promotion_code = models.ForeignKey(
+        'promotions.PromotionCode',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders'
+    )
     
     # Shipping Information
     shipping_name = models.CharField(max_length=100)
@@ -66,7 +77,8 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Order {self.order_number} - {self.user.email}"
+        email = self.user.email if self.user else self.billing_email or 'Guest'
+        return f"Order {self.order_number} - {email}"
 
     def save(self, *args, **kwargs):
         if not self.order_number:

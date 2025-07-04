@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { api } from '../../services/apiConfig'
-import type { User } from '../../types'
+import type { User, SocialAuthResponse } from '../../types'
 
 export interface AuthState {
   user: User | null
@@ -112,6 +112,19 @@ export const fetchUserProfile = createAsyncThunk(
   }
 )
 
+export const socialLogin = createAsyncThunk(
+  'auth/socialLogin',
+  async (data: { provider: string; access_token: string }) => {
+    const response = await api.post('/api/users/auth/social/', data)
+    
+    // Store tokens
+    localStorage.setItem('accessToken', response.data.access_token)
+    localStorage.setItem('refreshToken', response.data.refresh_token)
+    
+    return response.data
+  }
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -188,8 +201,42 @@ const authSlice = createSlice({
       })
       
       // Fetch profile
+      .addCase(fetchUserProfile.pending, (state) => {
+        state.isLoading = true
+      })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.isLoading = false
         state.user = action.payload
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.isLoading = false
+        // If we can't fetch the user profile due to invalid token, log out
+        if (action.error.message?.includes('401') || action.error.message?.includes('Unauthorized')) {
+          state.user = null
+          state.accessToken = null
+          state.refreshToken = null
+          state.isAuthenticated = false
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+        }
+      })
+      
+      // Social login
+      .addCase(socialLogin.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(socialLogin.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.accessToken = action.payload.access_token
+        state.refreshToken = action.payload.refresh_token
+        state.user = action.payload.user
+        state.error = null
+      })
+      .addCase(socialLogin.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.error.message || 'Social login failed'
       })
   },
 })

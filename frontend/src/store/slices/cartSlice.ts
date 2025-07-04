@@ -78,6 +78,8 @@ const cartSlice = createSlice({
     },
     clearCart: (state) => {
       state.cart = null
+      state.error = null
+      state.isLoading = false
     },
   },
   extraReducers: (builder) => {

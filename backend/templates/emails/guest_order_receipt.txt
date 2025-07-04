@@ -1,0 +1,65 @@
+{{ company_name }}
+Order Receipt
+
+Dear {{ customer_name }},
+
+Thank you for your order! This email serves as your receipt and contains important information about tracking your order.
+
+IMPORTANT: SAVE THIS EMAIL
+--------------------------
+As a guest customer, you'll need your order number and email address to track your order. Please save this email for your records.
+
+ORDER INFORMATION
+-----------------
+Order Number: {{ order_number }}
+Order Date: {{ created_at|date:"F j, Y, g:i A" }}
+Email: {{ order.billing_email }}
+
+ORDER ITEMS
+-----------
+{% for item in order_items %}
+{{ item.product_name }}
+  Quantity: {{ item.quantity }}
+  Unit Price: ${{ item.unit_price|floatformat:2 }}
+  Total: ${{ item.total_price|floatformat:2 }}
+{% endfor %}
+
+ORDER TOTAL
+-----------
+Subtotal: ${{ subtotal|floatformat:2 }}
+{% if tax_amount %}Tax: ${{ tax_amount|floatformat:2 }}{% endif %}
+Shipping: ${{ shipping_cost|floatformat:2 }}
+----------------------------------------
+Total: ${{ total_amount|floatformat:2 }}
+
+BILLING ADDRESS
+---------------
+{{ billing_address.name }}
+{{ billing_address.address }}
+{{ billing_address.city }}, {{ billing_address.state }} {{ billing_address.postal_code }}
+{{ billing_address.country }}
+
+SHIPPING ADDRESS
+----------------
+{{ shipping_address.name }}
+{{ shipping_address.address }}
+{{ shipping_address.city }}, {{ shipping_address.state }} {{ shipping_address.postal_code }}
+{{ shipping_address.country }}
+
+TRACK YOUR ORDER
+----------------
+Track your order at: {{ tracking_url }}
+
+You can also track your order by visiting our website and entering:
+Order Number: {{ order_number }}
+Email: {{ order.billing_email }}
+
+If you have any questions about your order, please contact our customer support team at {{ support_email }} and reference your order number.
+
+Thank you for choosing {{ company_name }}!
+
+Best regards,
+The {{ company_name }} Team
+
+© {{ current_year }} {{ company_name }}. All rights reserved.
+Visit our website: {{ company_url }}

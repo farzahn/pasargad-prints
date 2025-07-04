@@ -5,6 +5,9 @@ import type { AppDispatch, RootState } from '../store/index'
 import { fetchProductDetail, clearCurrentProduct } from '../store/slices/productsSlice'
 import { addToCart } from '../store/slices/cartSlice'
 import LoadingSpinner from '../components/LoadingSpinner'
+import LazyImage from '../components/LazyImage'
+import SEO from '../components/SEO'
+import { ProductStructuredData, BreadcrumbStructuredData } from '../components/StructuredData'
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -35,6 +38,18 @@ const ProductDetailPage = () => {
 
   const handleAddToCart = () => {
     if (currentProduct) {
+      // Check if product is in stock
+      if (!currentProduct.is_in_stock) {
+        alert('This product is currently out of stock')
+        return
+      }
+      
+      // Check if requested quantity is available
+      if (quantity > currentProduct.stock_quantity) {
+        alert(`Only ${currentProduct.stock_quantity} items available`)
+        return
+      }
+      
       dispatch(addToCart({ product_id: currentProduct.id, quantity }))
     }
   }
@@ -66,13 +81,40 @@ const ProductDetailPage = () => {
     )
   }
 
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: 'Products', url: '/products' },
+    { name: currentProduct.name, url: `/products/${currentProduct.id}` }
+  ]
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title={currentProduct.name}
+        description={currentProduct.description || `Shop ${currentProduct.name} at Pasargad Prints. ${currentProduct.category_name} product with high quality and fast shipping.`}
+        image={currentProduct.main_image}
+        type="product"
+      />
+      <ProductStructuredData 
+        product={{
+          name: currentProduct.name,
+          description: currentProduct.description || '',
+          price: currentProduct.price,
+          image: currentProduct.main_image || '',
+          sku: currentProduct.sku,
+          brand: currentProduct.brand,
+          inStock: currentProduct.is_in_stock,
+          rating: currentProduct.average_rating,
+          reviewCount: currentProduct.review_count
+        }}
+      />
+      <BreadcrumbStructuredData items={breadcrumbItems} />
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Product Images */}
         <div>
           <div className="bg-gray-100 rounded-lg overflow-hidden mb-4">
-            <img
+            <LazyImage
               src={selectedImage}
               alt={currentProduct.name}
               className="w-full h-96 lg:h-[500px] object-contain"
@@ -163,7 +205,7 @@ const ProductDetailPage = () => {
           </div>
 
           {/* Add to Cart Section */}
-          {currentProduct.is_in_stock && (
+          {currentProduct.is_in_stock ? (
             <div className="flex items-center gap-4 mb-8">
               <div>
                 <label htmlFor="quantity" className="sr-only">Quantity</label>
@@ -183,6 +225,18 @@ const ProductDetailPage = () => {
               >
                 Add to Cart
               </button>
+            </div>
+          ) : (
+            <div className="mb-8">
+              <button
+                disabled
+                className="w-full bg-gray-300 text-gray-500 py-3 px-6 rounded-md font-semibold cursor-not-allowed"
+              >
+                Out of Stock
+              </button>
+              <p className="mt-2 text-sm text-gray-600">
+                This product is currently unavailable. Please check back later.
+              </p>
             </div>
           )}
         </div>

@@ -1,0 +1,44 @@
+{{ company_name }} - Order Status Update
+
+Order Status Update
+
+Dear {{ customer_name }},
+
+We wanted to keep you informed about the status of your order. Here's the latest update:
+
+STATUS CHANGE
+-------------
+Previous Status: {{ old_status|upper }}
+New Status: {{ new_status|upper }}
+Updated: {{ status_changed_at|date:"F j, Y, g:i a" }}
+
+ORDER INFORMATION
+-----------------
+Order Number: #{{ order_number }}
+Order Date: {{ order.created_at|date:"F j, Y" }}
+Current Status: {{ new_status|title }}
+
+ORDER PROGRESS
+--------------
+[{% if order.status != 'pending' %}✓{% else %}○{% endif %}] Order Placed - We received your order
+[{% if order.status in 'processing,shipped,delivered' %}✓{% elif order.status == 'processing' %}●{% else %}○{% endif %}] Processing - Preparing your artwork
+[{% if order.status in 'shipped,delivered' %}✓{% elif order.status == 'shipped' %}●{% else %}○{% endif %}] Shipped - On the way to you
+[{% if order.status == 'delivered' %}✓{% else %}○{% endif %}] Delivered - Enjoy your art!
+
+{% if new_status == 'processing' %}
+What's happening now: Our team is carefully preparing your Persian miniature art pieces for shipment. We'll notify you as soon as your order ships!
+{% elif new_status == 'cancelled' %}
+Order Cancelled: Your order has been cancelled. If you have any questions or concerns, please contact our support team.
+{% elif new_status == 'refunded' %}
+Refund Processed: Your refund has been initiated and should appear in your account within 5-7 business days.
+{% endif %}
+
+View your order details: {{ frontend_url }}/orders/{{ order.id }}
+
+Questions about your order? Contact us at {{ support_email }}
+
+Thank you for choosing {{ company_name }}!
+
+---
+© {{ current_year }} {{ company_name }}. All rights reserved.
+Visit our website: {{ company_url }}

@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-g#8_3y58dah+oz3y+z%d^qphxyrp02btabxwg=f#v_g25scf-n')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io', 'backend']
 
@@ -63,11 +63,6 @@ INSTALLED_APPS = [
     'promotions',
     'analytics',
     'utils.apps.UtilsConfig',
-    'social_auth',
-    'referral_system',
-    'review_system',
-    'social_sharing',
-    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -606,35 +601,5 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Notification settings
-NOTIFICATION_SETTINGS = {
-    'ENABLE_EMAIL_NOTIFICATIONS': True,
-    'ENABLE_IN_APP_NOTIFICATIONS': True,
-    'ENABLE_REAL_TIME_NOTIFICATIONS': True,
-    'EMAIL_BATCH_SIZE': 100,
-    'EMAIL_BATCH_DELAY': 300,  # 5 minutes
-    'NOTIFICATION_RETENTION_DAYS': 90,
-}
-
-# Social sharing settings
-SOCIAL_SHARING_SETTINGS = {
-    'ENABLE_FACEBOOK_SHARING': True,
-    'ENABLE_TWITTER_SHARING': True,
-    'ENABLE_LINKEDIN_SHARING': True,
-    'ENABLE_PINTEREST_SHARING': True,
-    'ENABLE_WHATSAPP_SHARING': True,
-    'DEFAULT_SHARE_IMAGE': '/static/images/default-share-image.png',
-    'SITE_NAME': 'Pasargad Prints',
-    'SITE_DESCRIPTION': 'Premium 3D Printing Services',
-}
-
-# Referral system settings
-REFERRAL_SETTINGS = {
-    'REFERRAL_CODE_LENGTH': 8,
-    'REFERRAL_CODE_EXPIRY_DAYS': 365,
-    'REFERRER_REWARD_AMOUNT': 10.00,  # USD
-    'REFEREE_REWARD_AMOUNT': 5.00,   # USD
-    'MINIMUM_ORDER_VALUE': 25.00,    # USD
-    'MAX_REFERRALS_PER_USER': 50,
-    'REWARD_EXPIRY_DAYS': 180,
-}
+# Removed unused settings for notifications, social sharing, and referrals
+# These features were not implemented and apps have been removed

@@ -59,9 +59,9 @@ INSTALLED_APPS = [
     'cart',
     'payments',
     'wishlist',
-    'recommendations',
-    'promotions',
-    'analytics',
+    'recommendations',  # Keep for now - has implemented functionality
+    'promotions',  # Keep for now - referenced by Order model
+    'analytics',  # Keep for now - has middleware dependencies
     'utils.apps.UtilsConfig',
 ]
 
@@ -78,7 +78,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'utils.middleware.CacheMiddleware',
     'utils.middleware.PerformanceMonitoringMiddleware',
-    'analytics.middleware.AnalyticsMiddleware',
+    # Removed analytics.middleware.AnalyticsMiddleware - using Google Analytics instead
 ]
 
 ROOT_URLCONF = 'pasargad_prints.urls'

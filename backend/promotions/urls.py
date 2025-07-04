@@ -9,10 +9,5 @@ urlpatterns = [
     path('apply/', views.apply_promotion_code, name='apply_code'),
     path('active/', views.ActivePromotionsView.as_view(), name='active_promotions'),
     
-    # Admin endpoints
-    path('codes/', views.PromotionCodeListView.as_view(), name='code_list'),
-    path('codes/<int:pk>/', views.PromotionCodeDetailView.as_view(), name='code_detail'),
-    path('campaigns/', views.CampaignListView.as_view(), name='campaign_list'),
-    path('campaigns/<int:pk>/', views.CampaignDetailView.as_view(), name='campaign_detail'),
-    path('analytics/', views.promotion_analytics, name='analytics'),
+    # Removed unused admin endpoints - frontend admin panel not implemented
 ]

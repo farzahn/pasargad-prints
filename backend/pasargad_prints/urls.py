@@ -34,9 +34,6 @@ def api_root(request):
             'orders': '/api/orders/',
             'payments': '/api/payments/',
             'wishlist': '/api/wishlist/',
-            'recommendations': '/api/recommendations/',
-            'promotions': '/api/promotions/',
-            'analytics': '/api/analytics/',
             'admin': '/admin/',
             'health': '/health/',
         }
@@ -55,9 +52,9 @@ urlpatterns = [
     path('api/orders/', include('orders.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/wishlist/', include('wishlist.urls')),
-    path('api/recommendations/', include('recommendations.urls')),
-    path('api/promotions/', include('promotions.urls')),
-    path('api/analytics/', include('analytics.urls')),
+    # Removed recommendations URLs - feature not implemented in frontend
+    # Removed promotions URLs - discount codes not implemented in frontend
+    # Removed analytics URLs - frontend uses Google Analytics instead
     
     # Utility endpoints
     path('', include('utils.urls')),

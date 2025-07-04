@@ -33,13 +33,15 @@ logs/
 # =============================================================================
 # ENVIRONMENT FILES
 # =============================================================================
-.env
+# NOTE: .env is the main configuration file and should NOT be ignored
+# Only ignore environment-specific override files
 .env.local
 .env.*.local
-.env.development
-.env.staging
-.env.production
+.env.development.local
+.env.staging.local
+.env.production.local
 .env.ngrok
+!.env
 !.env.example
 
 # =============================================================================
@@ -58,6 +60,9 @@ yarn-error.log*
 frontend/dist/
 frontend/.vite/
 *.local
+.vite/
+dist/
+.turbo/
 
 # =============================================================================
 # BUILD AND DISTRIBUTION
@@ -71,14 +76,27 @@ dist/
 # IDE AND EDITORS
 # =============================================================================
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-.vscode/settings.json
-.vscode/launch.json
-.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.loadpath
+.buildpath
 
 # =============================================================================
 # DOCKER
@@ -103,6 +121,13 @@ coverage.xml
 .pytest_cache/
 .tox/
 .nyc_output/
+.jest/
+coverage/
+.vitest/
+test-results/
+playwright-report/
+test-results.xml
+junit.xml
 
 # =============================================================================
 # TEMPORARY FILES
@@ -133,6 +158,14 @@ Thumbs.db
 .cache/
 .parcel-cache/
 .eslintcache
+.stylelintcache
+*.tsbuildinfo
+.npm/
+.yarn/
+.pnpm/
+.turbo/
+next/
+.swc/
 
 # =============================================================================
 # MONITORING AND LOGS
@@ -184,6 +217,38 @@ bower_components
 .env.test.local
 .env.production.local
 
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Package managers
+.pnpm-store/
+.yarn/
+.yarnrc.yml
+pnpm-lock.yaml
+yarn.lock
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
 # =============================================================================
 # DOCUMENTATION BUILD
 # =============================================================================
@@ -192,9 +257,9 @@ docs/build/
 site/
 
 # =============================================================================
-# CLEANUP AND TESTING FILES (from development phase)
+# DEVELOPMENT AND TESTING FILES
 # =============================================================================
-*_test_results.json
+# Development documentation (from development phase)
 *_TEST_*.md
 *_REPORT.md
 *_SUMMARY.md
@@ -203,42 +268,12 @@ site/
 *_ANALYSIS.md
 *_DOCUMENTATION.md
 *_CHECKLIST.md
-*_PLAYBOOK.md
-*_VALIDATION.md
-*_AUDIT.md
 *_CONTEXT.md
 *_IMPLEMENTATION.md
 *_CONFIGURATION.md
-*_OPTIMIZATION.md
+*_VALIDATION.md
+*_AUDIT.md
 *_DEPLOYMENT.md
-*_COMMUNICATION.md
-*_PHASES.md
-*_INTEGRATION.md
-*_CONSOLIDATION.md
-*_MIGRATION.md
-*_UPDATES.md
-*_FIXES.md
-*_CLEANUP.md
-*_BACKEND.md
-*_FRONTEND.md
-*_SECURITY.md
-*_PERFORMANCE.md
-*_ANALYTICS.md
-*_PRODUCTION.md
-*_VERIFICATION.md
-*_STRIPE.md
-*_NGROK.md
-*_GITHUB.md
-*_ENVIRONMENT.md
-*_ACCESSIBILITY.md
-*_ADMIN.md
-*_CHECKOUT.md
-*_READINESS.md
-*_SETUP.md
-*_DOCKER.md
-*_MONITORING.md
-*_STRATEGY.md
-*_HARDENING.md
 *_PHASE*.md
 *_API_*.md
 *_CORS_*.md
@@ -252,7 +287,6 @@ site/
 *_ENV_*.md
 *_CONSOLIDATION_*.md
 *_COMPREHENSIVE_*.md
-*_VALIDATION_*.md
 *_FINAL_*.md
 *_COMPLETE_*.md
 *_DETAILED_*.md
@@ -265,7 +299,6 @@ site/
 *_BROWSER_*.md
 *_FRONTEND_*.md
 *_INTEGRATION_*.md
-*_PRECEDENCE_*.md
 *_STATUS_*.md
 *_INVESTIGATION_*.md
 *_TRACKING_*.md
@@ -284,35 +317,20 @@ site/
 *_ADMIN_*.md
 *_USERS_*.md
 *_PRODUCT_*.md
-*_COMPLETE_*.md
 *_SIMULATION_*.md
-*_COMPREHENSIVE_*.md
-*_SIMPLE_*.md
-*_BROWSER_*.md
-*_VALIDATION_*.md
 *_DEBUG_*.md
 *_PROXY_*.md
-*_CONFIG_*.md
 *_TEST_*.md
 *_DISPLAY_*.md
-*_ENDPOINT_*.md
 *_LOGIN_*.md
-*_COMMUNICATION_*.md
 *_READY_*.md
 *_NGROK_*.md
 *_DOCKER_*.md
 *_STRIPE_*.md
-*_ADMIN_*.md
 *_CHECKOUT_*.md
-*_WORKFLOW_*.md
-*_ENV_*.md
-*_BASIC_*.md
-*_DJANGO_*.md
-*_CONTEXT_*.md
 *_OVERRIDE_*.md
 *_STAGING_*.md
 *_PRODUCTION_*.md
-*_NGROK_*.md
 
 # Development and testing scripts
 test_*.py
@@ -340,60 +358,9 @@ simple_*.py
 quick_*.py
 validate_*.py
 configure_*.py
-api_*.py
-cors_*.py
-cart_*.py
-stock_*.py
-payment_*.py
-auth_*.py
-django_*.py
-root_*.py
-config_*.py
-env_*.py
-consolidation_*.py
-comprehensive_*.py
-validation_*.py
-final_*.py
-complete_*.py
-detailed_*.py
-simple_*.py
-basic_*.py
-quick_*.py
-testing_*.py
-workflow_*.py
-communication_*.py
-browser_*.py
-frontend_*.py
-integration_*.py
-precedence_*.py
-status_*.py
-investigation_*.py
-tracking_*.py
-webhook_*.py
-flow_*.py
-endpoint_*.py
-connectivity_*.py
-session_*.py
-live_*.py
-loading_*.py
-path_*.py
-update_*.py
-issues_*.py
-bug_*.py
-fix_*.py
-admin_*.py
-users_*.py
-product_*.py
-complete_*.py
-simulation_*.py
-comprehensive_*.py
-simple_*.py
-browser_*.py
-validation_*.py
 debug_*.py
 proxy_*.py
 config_*.py
-test_*.py
 display_*.py
 endpoint_*.py
 login_*.py
@@ -412,9 +379,8 @@ context_*.py
 override_*.py
 staging_*.py
 production_*.py
-ngrok_*.py
 
-# Build scripts
+# Build and deployment scripts (development phase)
 build.sh
 deploy.sh
 deploy-*.sh

@@ -24,3 +24,4 @@ django-debug-toolbar==4.2.0
 user-agents==2.2.0
 reportlab==4.0.8
 django-filter==23.5
+shippo==3.9.0

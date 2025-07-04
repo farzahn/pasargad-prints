@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatusHistory, TrackingStatus
 from products.models import Product
 
 
@@ -52,6 +52,34 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'created_by_name']
 
 
+class TrackingStatusSerializer(serializers.ModelSerializer):
+    """Serializer for tracking status history from Goshippo."""
+    
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    class Meta:
+        model = TrackingStatus
+        fields = [
+            'id',
+            'goshippo_tracking_id',
+            'tracking_number',
+            'carrier',
+            'status',
+            'status_display',
+            'status_details',
+            'status_date',
+            'location_city',
+            'location_state',
+            'location_zip',
+            'location_country',
+            'goshippo_object_created',
+            'goshippo_object_updated',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
 class OrderSerializer(serializers.ModelSerializer):
     """Serializer for order list view with basic information."""
     
@@ -80,6 +108,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     
     items = OrderItemSerializer(many=True, read_only=True)
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
+    tracking_statuses = TrackingStatusSerializer(many=True, read_only=True)
     total_items = serializers.ReadOnlyField()
     total_weight = serializers.ReadOnlyField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
@@ -122,8 +151,15 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             
             # Tracking
             'tracking_number',
-            'shipstation_order_id',
             'estimated_delivery',
+            'carrier',
+            'service_level',
+            'goshippo_order_id',
+            'goshippo_transaction_id',
+            'goshippo_object_id',
+            'goshippo_rate_id',
+            'goshippo_tracking_url',
+            'goshippo_label_url',
             
             # Computed fields
             'total_items',
@@ -132,6 +168,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             # Related data
             'items',
             'status_history',
+            'tracking_statuses',
             
             # Timestamps
             'created_at',
@@ -218,6 +255,8 @@ class OrderTrackingSerializer(serializers.ModelSerializer):
     
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     items = serializers.SerializerMethodField()
+    latest_tracking_status = serializers.SerializerMethodField()
+    tracking_history = serializers.SerializerMethodField()
     
     class Meta:
         model = Order
@@ -226,12 +265,28 @@ class OrderTrackingSerializer(serializers.ModelSerializer):
             'status',
             'status_display',
             'tracking_number',
+            'carrier',
+            'service_level',
+            'goshippo_tracking_url',
             'estimated_delivery',
             'created_at',
             'shipped_at',
             'delivered_at',
-            'items'
+            'items',
+            'latest_tracking_status',
+            'tracking_history'
         ]
+    
+    def get_latest_tracking_status(self, obj):
+        """Get the latest tracking status from Goshippo."""
+        latest_status = obj.tracking_statuses.first()
+        if latest_status:
+            return TrackingStatusSerializer(latest_status).data
+        return None
+    
+    def get_tracking_history(self, obj):
+        """Get all tracking status history."""
+        return TrackingStatusSerializer(obj.tracking_statuses.all(), many=True).data
     
     def get_items(self, obj):
         """Return simplified item information for tracking."""

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Order, OrderItem, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatusHistory, TrackingStatus
 
 
 class OrderItemInline(admin.TabularInline):
@@ -16,13 +16,20 @@ class OrderStatusHistoryInline(admin.TabularInline):
     readonly_fields = ('created_at', 'created_by')
 
 
+class TrackingStatusInline(admin.TabularInline):
+    model = TrackingStatus
+    extra = 0
+    fields = ('tracking_number', 'carrier', 'status', 'status_details', 'status_date', 'location_city', 'location_state')
+    readonly_fields = ('goshippo_object_created', 'goshippo_object_updated', 'created_at', 'updated_at')
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'user', 'status', 'fulfillment_method', 'total_amount', 'created_at')
-    list_filter = ('status', 'fulfillment_method', 'created_at')
-    search_fields = ('order_number', 'user__email', 'shipping_email', 'tracking_number')
+    list_display = ('order_number', 'user', 'status', 'fulfillment_method', 'carrier', 'total_amount', 'created_at')
+    list_filter = ('status', 'fulfillment_method', 'carrier', 'created_at')
+    search_fields = ('order_number', 'user__email', 'shipping_email', 'tracking_number', 'shippo_transaction_id')
     ordering = ('-created_at',)
-    inlines = [OrderItemInline, OrderStatusHistoryInline]
+    inlines = [OrderItemInline, OrderStatusHistoryInline, TrackingStatusInline]
     
     fieldsets = (
         ('Order Information', {
@@ -42,8 +49,13 @@ class OrderAdmin(admin.ModelAdmin):
                       'billing_country'),
             'classes': ('collapse',)
         }),
-        ('Tracking', {
-            'fields': ('tracking_number', 'shipstation_order_id', 'estimated_delivery')
+        ('Tracking & Shipping', {
+            'fields': ('tracking_number', 'carrier', 'service_level', 'estimated_delivery')
+        }),
+        ('Goshippo Integration', {
+            'fields': ('goshippo_order_id', 'goshippo_transaction_id', 'goshippo_object_id', 
+                      'goshippo_rate_id', 'goshippo_tracking_url', 'goshippo_label_url'),
+            'classes': ('collapse',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at', 'shipped_at', 'delivered_at'),
@@ -68,3 +80,12 @@ class OrderStatusHistoryAdmin(admin.ModelAdmin):
     list_filter = ('status', 'created_at')
     search_fields = ('order__order_number', 'notes')
     ordering = ('-created_at',)
+
+
+@admin.register(TrackingStatus)
+class TrackingStatusAdmin(admin.ModelAdmin):
+    list_display = ('order', 'tracking_number', 'carrier', 'status', 'status_date', 'location_city', 'location_state')
+    list_filter = ('status', 'carrier', 'status_date', 'created_at')
+    search_fields = ('order__order_number', 'tracking_number', 'status_details', 'goshippo_tracking_id')
+    ordering = ('-status_date', '-created_at')
+    readonly_fields = ('goshippo_object_created', 'goshippo_object_updated', 'created_at', 'updated_at')

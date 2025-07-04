@@ -2,9 +2,15 @@ from rest_framework import generics, filters, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.decorators import api_view, permission_classes
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse
+import json
+import logging
 
 from .models import Order, OrderItem, OrderStatusHistory
 from .serializers import (
@@ -16,6 +22,7 @@ from .serializers import (
 from .permissions import IsOwnerOrAdmin, IsAdminUser
 from .pagination import OrderPagination
 from .filters import OrderFilter
+from utils.goshippo_service import goshippo_service
 
 
 class OrderListView(generics.ListAPIView):
@@ -117,6 +124,28 @@ class OrderTrackingView(generics.RetrieveAPIView):
             return Order.objects.get(tracking_number=tracking_number)
         except Order.DoesNotExist:
             raise NotFound("Order not found with this tracking number")
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Enhanced retrieve with real-time tracking from Goshippo."""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        
+        # Get real-time tracking info from Goshippo if tracking number exists
+        if instance.tracking_number:
+            try:
+                tracking_info = goshippo_service.track_shipment(instance.tracking_number)
+                data['goshippo_tracking'] = {
+                    'tracking_status': tracking_info.get('tracking_status'),
+                    'eta': tracking_info.get('eta'),
+                    'tracking_history': tracking_info.get('tracking_history', [])
+                }
+            except Exception as e:
+                # Log error but don't fail the request
+                print(f"Failed to fetch Goshippo tracking info: {e}")
+                data['goshippo_tracking'] = None
+        
+        return Response(data)
 
 
 class OrderTrackingByIdView(generics.RetrieveAPIView):
@@ -213,13 +242,33 @@ class OrderStatusUpdateView(generics.UpdateAPIView):
         
         # Trigger additional actions based on status
         from utils.email import email_service
+        from utils.goshippo_service import goshippo_service
         
-        if order.status == 'shipped':
+        if order.status == 'processing':
+            # When order is processing, get shipping rates from Goshippo
+            try:
+                rates = goshippo_service.get_shipping_rates(order)
+                print(f"Retrieved {len(rates)} shipping rates for order {order.order_number}")
+                # Store rates or use the cheapest/fastest rate automatically
+                # This is where business logic for rate selection would go
+            except Exception as e:
+                print(f"Failed to get shipping rates: {e}")
+        
+        elif order.status == 'shipped':
             # Send shipping notification email
             try:
                 email_service.send_order_shipped_notification(order)
             except Exception as e:
                 print(f"Failed to send shipping notification: {e}")
+                
+            # Update tracking information from Goshippo if transaction exists
+            try:
+                if order.goshippo_transaction_id:
+                    transaction_status = goshippo_service.get_transaction_status(order.goshippo_transaction_id)
+                    if transaction_status:
+                        print(f"Transaction status for order {order.order_number}: {transaction_status['status']}")
+            except Exception as e:
+                print(f"Failed to get transaction status: {e}")
         
         elif order.status == 'delivered':
             # Send delivery confirmation email
@@ -286,3 +335,147 @@ class OrderStatisticsView(generics.GenericAPIView):
         }
         
         return Response(stats)
+
+
+class OrderShippingRatesView(generics.GenericAPIView):
+    """
+    Get shipping rates for an order using Goshippo.
+    
+    GET /api/orders/{id}/shipping-rates/
+    
+    Returns available shipping rates for the order.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    queryset = Order.objects.all()
+    
+    def get(self, request, pk):
+        """Get shipping rates for the order."""
+        try:
+            order = self.get_object()
+            from utils.goshippo_service import goshippo_service
+            
+            rates = goshippo_service.get_shipping_rates(order)
+            
+            return Response({
+                'order_number': order.order_number,
+                'rates': rates
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to get shipping rates: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class OrderCreateShipmentView(generics.GenericAPIView):
+    """
+    Create a shipment for an order using Goshippo.
+    
+    POST /api/orders/{id}/create-shipment/
+    
+    Request Body:
+    {
+        "rate_object_id": "goshippo_rate_id"
+    }
+    
+    Creates a shipping transaction and updates the order with tracking information.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    queryset = Order.objects.all()
+    
+    def post(self, request, pk):
+        """Create shipment for the order."""
+        try:
+            order = self.get_object()
+            rate_object_id = request.data.get('rate_object_id')
+            
+            if not rate_object_id:
+                return Response(
+                    {'error': 'rate_object_id is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from utils.goshippo_service import goshippo_service
+            
+            result = goshippo_service.process_order_shipment(order, rate_object_id)
+            
+            if result['success']:
+                # Update order status to shipped
+                order.status = 'shipped'
+                order.save()
+                
+                # Create status history entry
+                OrderStatusHistory.objects.create(
+                    order=order,
+                    status='shipped',
+                    notes=f"Shipment created via Goshippo. Tracking: {result['tracking_number']}",
+                    created_by=request.user
+                )
+                
+                return Response({
+                    'success': True,
+                    'message': 'Shipment created successfully',
+                    'tracking_number': result['tracking_number'],
+                    'tracking_url': result.get('tracking_url'),
+                    'label_url': result.get('label_url')
+                })
+            else:
+                return Response(
+                    {'error': result['error']},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to create shipment: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class OrderTrackingUpdateView(generics.GenericAPIView):
+    """
+    Update tracking information for an order using Goshippo.
+    
+    POST /api/orders/{id}/update-tracking/
+    
+    Updates the order with latest tracking information from Goshippo.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    queryset = Order.objects.all()
+    
+    def post(self, request, pk):
+        """Update tracking information for the order."""
+        try:
+            order = self.get_object()
+            
+            if not order.goshippo_transaction_id:
+                return Response(
+                    {'error': 'Order does not have a Goshippo transaction ID'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from utils.goshippo_service import goshippo_service
+            
+            transaction_status = goshippo_service.get_transaction_status(order.goshippo_transaction_id)
+            
+            if transaction_status:
+                return Response({
+                    'order_number': order.order_number,
+                    'tracking_number': transaction_status['tracking_number'],
+                    'tracking_url': transaction_status['tracking_url'],
+                    'status': transaction_status['status'],
+                    'eta': transaction_status['eta']
+                })
+            else:
+                return Response(
+                    {'error': 'Failed to get tracking information'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to update tracking: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+

@@ -387,4 +387,4 @@ deploy-*.sh
 start-*.sh
 verify-*.sh
 fix_*.sh
-test_*.sh
+test_*.sh.env

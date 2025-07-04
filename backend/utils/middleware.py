@@ -17,8 +17,10 @@ logger = logging.getLogger(__name__)
 
 class RequestLoggingMiddleware(MiddlewareMixin):
     """
-    Middleware to log all incoming requests and responses
+    Middleware to log all incoming requests and responses with performance monitoring
     """
+    
+    SLOW_REQUEST_THRESHOLD = 3.0  # seconds
     
     def process_request(self, request):
         # Generate unique request ID
@@ -46,24 +48,41 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         else:
             duration = 0
         
-        # Log response details
-        logger.info(
-            f"Request completed: {getattr(request, 'id', 'unknown')} - "
-            f"{request.method} {request.path} - Status: {response.status_code} - "
-            f"Duration: {duration:.3f}s",
-            extra={
-                'request_id': getattr(request, 'id', 'unknown'),
-                'method': request.method,
-                'path': request.path,
-                'status_code': response.status_code,
-                'duration': duration,
-                'user': request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
-            }
-        )
+        # Log slow requests with warning
+        if duration > self.SLOW_REQUEST_THRESHOLD:
+            logger.warning(
+                f"Slow request detected: {getattr(request, 'id', 'unknown')} - "
+                f"{request.method} {request.path} - Status: {response.status_code} - "
+                f"Duration: {duration:.3f}s",
+                extra={
+                    'request_id': getattr(request, 'id', 'unknown'),
+                    'method': request.method,
+                    'path': request.path,
+                    'status_code': response.status_code,
+                    'duration': duration,
+                    'user': request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
+                }
+            )
+        else:
+            # Log normal response
+            logger.info(
+                f"Request completed: {getattr(request, 'id', 'unknown')} - "
+                f"{request.method} {request.path} - Status: {response.status_code} - "
+                f"Duration: {duration:.3f}s",
+                extra={
+                    'request_id': getattr(request, 'id', 'unknown'),
+                    'method': request.method,
+                    'path': request.path,
+                    'status_code': response.status_code,
+                    'duration': duration,
+                    'user': request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
+                }
+            )
         
-        # Add request ID to response headers
+        # Add request ID and performance headers
         if hasattr(request, 'id'):
             response['X-Request-ID'] = request.id
+        response['X-Response-Time'] = f"{duration:.3f}"
         
         return response
     

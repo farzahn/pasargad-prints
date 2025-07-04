@@ -28,7 +28,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-g#8_3y58dah+oz3y+z%d^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io', 'backend']
+# ALLOWED_HOSTS - Restrictive for production
+if DEBUG:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io', 'backend']
+else:
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='pasargadprints.com,www.pasargadprints.com').split(',')
 
 
 # Application definition
@@ -43,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',  # Required for allauth
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # For JWT token blacklisting
     'corsheaders',
     'django.contrib.postgres',  # For full-text search
     # Third-party apps
@@ -76,9 +81,13 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'utils.middleware.CacheMiddleware',
-    'utils.middleware.PerformanceMonitoringMiddleware',
-    # Removed analytics.middleware.AnalyticsMiddleware - using Google Analytics instead
+    # Custom middleware - consolidated
+    'utils.middleware.RequestLoggingMiddleware',  # Includes performance monitoring
+    'utils.middleware.CacheMiddleware',  # API caching
+    # Removed redundant middleware:
+    # - SecurityHeadersMiddleware (Django's SecurityMiddleware handles this)
+    # - PerformanceMonitoringMiddleware (consolidated into RequestLoggingMiddleware)
+    # - analytics.middleware.AnalyticsMiddleware (using Google Analytics instead)
 ]
 
 ROOT_URLCONF = 'pasargad_prints.urls'
@@ -153,6 +162,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Enforce minimum 8 characters
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -229,28 +241,58 @@ REST_FRAMEWORK = {
 
 # Removed duplicate REST_FRAMEWORK configuration
 
-# Simple JWT
+# Simple JWT - Enhanced security settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Reduced from 60 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://10.100.100.118:3000",
-]
-
-# Allow any ngrok subdomain
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.ngrok-free\.app$",
-    r"^https://.*\.ngrok\.io$",
-]
+# CORS settings - More restrictive for production
+if DEBUG:
+    # Development settings - allow local and ngrok
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://10.100.100.118:3000",
+    ]
+    
+    # Allow ngrok subdomains for development
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://.*\.ngrok-free\.app$",
+        r"^https://.*\.ngrok\.io$",
+    ]
+else:
+    # Production settings - only allow specific origins
+    CORS_ALLOWED_ORIGINS = [
+        config('PRODUCTION_FRONTEND_URL', default='https://pasargadprints.com'),
+    ]
+    CORS_ALLOWED_ORIGIN_REGEXES = []
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -270,13 +312,25 @@ STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
 # Session settings
-SESSION_COOKIE_AGE = 600  # 10 minutes
+SESSION_COOKIE_AGE = 3600  # 1 hour (was too short at 10 minutes)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# Additional security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
 
 # Add ngrok bypass header if present
 USE_X_FORWARDED_HOST = True
@@ -387,7 +441,7 @@ if not os.path.exists(LOG_DIR):
 USE_REDIS_CACHE = config('USE_REDIS_CACHE', default=False, cast=bool)
 
 if USE_REDIS_CACHE:
-    # Production Redis configuration
+    # Production Redis configuration - Simplified to single cache backend
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
@@ -406,53 +460,19 @@ if USE_REDIS_CACHE:
                 'COMPRESS_MIN_LEN': 10,
                 'COMPRESS_LEVEL': 6,
             }
-        },
-        'session': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/2'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'KEY_PREFIX': 'session',
-                'TIMEOUT': 86400,  # 24 hours
-            }
-        },
-        'api': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/3'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'KEY_PREFIX': 'api',
-                'TIMEOUT': 60,  # 1 minute for API responses
-            }
         }
     }
     
-    # Use Redis for session storage
+    # Use Redis for session storage with default cache
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'session'
+    SESSION_CACHE_ALIAS = 'default'
     
 else:
-    # Development configuration using local memory cache
+    # Development configuration using local memory cache - Simplified to single cache
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'LOCATION': 'unique-snowflake',
-            'OPTIONS': {
-                'MAX_ENTRIES': 1000,
-                'CULL_FREQUENCY': 4,
-            }
-        },
-        'session': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'session-cache',
-            'OPTIONS': {
-                'MAX_ENTRIES': 1000,
-                'CULL_FREQUENCY': 4,
-            }
-        },
-        'api': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'api-cache',
             'OPTIONS': {
                 'MAX_ENTRIES': 1000,
                 'CULL_FREQUENCY': 4,

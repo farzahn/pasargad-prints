@@ -11,6 +11,9 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Copy .env file from root directory for environment variables
+COPY ../.env .env
+
 # Expose port
 EXPOSE 3000
 

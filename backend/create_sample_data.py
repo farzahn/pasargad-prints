@@ -1,6 +1,13 @@
 import os
 import django
 from decimal import Decimal
+from pathlib import Path
+
+# Load environment variables from root .env file
+from dotenv import load_dotenv
+root_dir = Path(__file__).resolve().parent.parent
+env_path = root_dir / '.env'
+load_dotenv(env_path)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pasargad_prints.settings')
 django.setup()

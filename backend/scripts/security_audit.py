@@ -18,6 +18,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
+# Load environment variables from root .env file
+from dotenv import load_dotenv
+root_dir = Path(__file__).resolve().parent.parent.parent
+env_path = root_dir / '.env'
+load_dotenv(env_path)
+
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pasargad_prints.settings_production')
 import django

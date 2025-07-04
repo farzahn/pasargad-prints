@@ -1,9 +1,29 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 
-// When VITE_API_URL is empty, use relative URLs which work with ngrok
-// This allows the frontend to work with any domain/tunnel without hardcoding URLs
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+// API Configuration with proper fallbacks
+// Priority: Environment variable > localhost:8000 for development > relative URLs for production
+const getApiBaseUrl = () => {
+  // Check for explicit API URL from environment
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  
+  // In development, default to localhost:8000
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8000'
+  }
+  
+  // In production, use relative URLs (works with reverse proxy)
+  return ''
+}
+
+const API_BASE_URL = getApiBaseUrl()
+
+// Debug: Log the API base URL in development
+if (import.meta.env.DEV) {
+  console.log('🔗 API Base URL:', API_BASE_URL || 'Using relative URLs')
+}
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -20,6 +40,17 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // Debug logging for registration requests
+    if (config.url?.includes('/auth/register/') && import.meta.env.DEV) {
+      console.log('🔍 API Config - Request interceptor for registration:')
+      console.log('  - URL:', config.url)
+      console.log('  - Method:', config.method)
+      console.log('  - Headers:', config.headers)
+      console.log('  - Data:', config.data)
+      console.log('  - Base URL:', config.baseURL)
+    }
+    
     return config
   },
   (error) => {
@@ -34,6 +65,16 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config
+    
+    // Debug logging for registration errors
+    if (originalRequest.url?.includes('/auth/register/') && import.meta.env.DEV) {
+      console.log('🔍 API Config - Response interceptor error for registration:')
+      console.log('  - Status:', error.response?.status)
+      console.log('  - Status Text:', error.response?.statusText)
+      console.log('  - Error Data:', error.response?.data)
+      console.log('  - Request Data:', originalRequest.data)
+      console.log('  - Request Headers:', originalRequest.headers)
+    }
     
     // If we get a 401 and haven't already tried to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {

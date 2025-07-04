@@ -10,7 +10,8 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
-from decouple import config
+# Use custom config loader that points to root .env file
+from .config import config
 
 # Import base settings
 from .settings import *

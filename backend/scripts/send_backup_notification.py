@@ -10,10 +10,17 @@ import sys
 import os
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
 import json
+
+# Load environment variables from root .env file
+from dotenv import load_dotenv
+root_dir = Path(__file__).resolve().parent.parent.parent
+env_path = root_dir / '.env'
+load_dotenv(env_path)
 
 # Add Django settings
 sys.path.append('/app')
@@ -25,7 +32,11 @@ django.setup()
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from decouple import config
+# Import config from our custom module
+from pathlib import Path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+from pasargad_prints.config import config
 
 # Configure logging
 logging.basicConfig(

@@ -1,4 +1,10 @@
-# Python
+# =============================================================================
+# PASARGAD PRINTS - GITIGNORE
+# =============================================================================
+
+# =============================================================================
+# PYTHON
+# =============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -12,64 +18,407 @@ ENV/
 dist/
 build/
 
-# Django
+# =============================================================================
+# DJANGO
+# =============================================================================
 *.log
 *.pot
 *.pyc
 db.sqlite3
 media/
 staticfiles/
+static/
+logs/
 
-# Environment files
+# =============================================================================
+# ENVIRONMENT FILES
+# =============================================================================
 .env
 .env.local
 .env.*.local
+.env.development
+.env.staging
+.env.production
+.env.ngrok
 !.env.example
 
-# Node
+# =============================================================================
+# NODE.JS
+# =============================================================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.yarn-integrity
 
-# React/Vite
+# =============================================================================
+# REACT/VITE
+# =============================================================================
 frontend/dist/
 frontend/.vite/
 *.local
 
-# IDE
+# =============================================================================
+# BUILD AND DISTRIBUTION
+# =============================================================================
+build/
+dist/
+*.tar.gz
+*.zip
+
+# =============================================================================
+# IDE AND EDITORS
+# =============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
 
-# Docker
+# =============================================================================
+# DOCKER
+# =============================================================================
 *.pid
+docker-compose.override.yml
+*.dockerignore
 
-# Stripe
+# =============================================================================
+# PAYMENT SERVICES
+# =============================================================================
 .stripe/
 
-# Coverage
+# =============================================================================
+# TESTING AND COVERAGE
+# =============================================================================
 htmlcov/
 .coverage
 .coverage.*
 coverage.xml
 *.cover
-
-# Testing
 .pytest_cache/
 .tox/
+.nyc_output/
 
-# Backups
+# =============================================================================
+# TEMPORARY FILES
+# =============================================================================
+*.tmp
+*.temp
 *.bak
 *.backup
+*.swp
+*.swo
+*~
 
-# OS
+# =============================================================================
+# OPERATING SYSTEM
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Environment files
-.env.ngrok
-frontend/.env.local
+# =============================================================================
+# CACHE FILES
+# =============================================================================
+*.cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# =============================================================================
+# MONITORING AND LOGS
+# =============================================================================
+*.log
+logs/
+monitoring/data/
+
+# =============================================================================
+# ANALYTICS AND TRACKING
+# =============================================================================
+.analytics/
+.tracking/
+
+# =============================================================================
+# SECURITY
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+secrets/
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+*.pid
+*.seed
+*.pid.lock
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.optional
+.nyc_output
+.grunt
+bower_components
+.lock-wscript
+.wafpickle-*
+.env.test
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =============================================================================
+# DOCUMENTATION BUILD
+# =============================================================================
+docs/_build/
+docs/build/
+site/
+
+# =============================================================================
+# CLEANUP AND TESTING FILES (from development phase)
+# =============================================================================
+*_test_results.json
+*_TEST_*.md
+*_REPORT.md
+*_SUMMARY.md
+*_PLAN.md
+*_GUIDE.md
+*_ANALYSIS.md
+*_DOCUMENTATION.md
+*_CHECKLIST.md
+*_PLAYBOOK.md
+*_VALIDATION.md
+*_AUDIT.md
+*_CONTEXT.md
+*_IMPLEMENTATION.md
+*_CONFIGURATION.md
+*_OPTIMIZATION.md
+*_DEPLOYMENT.md
+*_COMMUNICATION.md
+*_PHASES.md
+*_INTEGRATION.md
+*_CONSOLIDATION.md
+*_MIGRATION.md
+*_UPDATES.md
+*_FIXES.md
+*_CLEANUP.md
+*_BACKEND.md
+*_FRONTEND.md
+*_SECURITY.md
+*_PERFORMANCE.md
+*_ANALYTICS.md
+*_PRODUCTION.md
+*_VERIFICATION.md
+*_STRIPE.md
+*_NGROK.md
+*_GITHUB.md
+*_ENVIRONMENT.md
+*_ACCESSIBILITY.md
+*_ADMIN.md
+*_CHECKOUT.md
+*_READINESS.md
+*_SETUP.md
+*_DOCKER.md
+*_MONITORING.md
+*_STRATEGY.md
+*_HARDENING.md
+*_PHASE*.md
+*_API_*.md
+*_CORS_*.md
+*_CART_*.md
+*_STOCK_*.md
+*_PAYMENT_*.md
+*_AUTH*.md
+*_DJANGO_*.md
+*_ROOT_*.md
+*_CONFIG_*.md
+*_ENV_*.md
+*_CONSOLIDATION_*.md
+*_COMPREHENSIVE_*.md
+*_VALIDATION_*.md
+*_FINAL_*.md
+*_COMPLETE_*.md
+*_DETAILED_*.md
+*_SIMPLE_*.md
+*_BASIC_*.md
+*_QUICK_*.md
+*_TESTING_*.md
+*_WORKFLOW_*.md
+*_COMMUNICATION_*.md
+*_BROWSER_*.md
+*_FRONTEND_*.md
+*_INTEGRATION_*.md
+*_PRECEDENCE_*.md
+*_STATUS_*.md
+*_INVESTIGATION_*.md
+*_TRACKING_*.md
+*_WEBHOOK_*.md
+*_FLOW_*.md
+*_ENDPOINT_*.md
+*_CONNECTIVITY_*.md
+*_SESSION_*.md
+*_LIVE_*.md
+*_LOADING_*.md
+*_PATH_*.md
+*_UPDATE_*.md
+*_ISSUES_*.md
+*_BUG_*.md
+*_FIX_*.md
+*_ADMIN_*.md
+*_USERS_*.md
+*_PRODUCT_*.md
+*_COMPLETE_*.md
+*_SIMULATION_*.md
+*_COMPREHENSIVE_*.md
+*_SIMPLE_*.md
+*_BROWSER_*.md
+*_VALIDATION_*.md
+*_DEBUG_*.md
+*_PROXY_*.md
+*_CONFIG_*.md
+*_TEST_*.md
+*_DISPLAY_*.md
+*_ENDPOINT_*.md
+*_LOGIN_*.md
+*_COMMUNICATION_*.md
+*_READY_*.md
+*_NGROK_*.md
+*_DOCKER_*.md
+*_STRIPE_*.md
+*_ADMIN_*.md
+*_CHECKOUT_*.md
+*_WORKFLOW_*.md
+*_ENV_*.md
+*_BASIC_*.md
+*_DJANGO_*.md
+*_CONTEXT_*.md
+*_OVERRIDE_*.md
+*_STAGING_*.md
+*_PRODUCTION_*.md
+*_NGROK_*.md
+
+# Development and testing scripts
+test_*.py
+test_*.js
+test_*.mjs
+test_*.cjs
+test-*.js
+test-*.sh
+*_test.py
+*_test.js
+*_test.mjs
+*_test.cjs
+*-test.js
+*-test.sh
+check_*.py
+check_*.js
+fix_*.py
+fix_*.js
+fix_*.sh
+create_*.py
+update_*.py
+populate_*.py
+reproduce_*.py
+simple_*.py
+quick_*.py
+validate_*.py
+configure_*.py
+api_*.py
+cors_*.py
+cart_*.py
+stock_*.py
+payment_*.py
+auth_*.py
+django_*.py
+root_*.py
+config_*.py
+env_*.py
+consolidation_*.py
+comprehensive_*.py
+validation_*.py
+final_*.py
+complete_*.py
+detailed_*.py
+simple_*.py
+basic_*.py
+quick_*.py
+testing_*.py
+workflow_*.py
+communication_*.py
+browser_*.py
+frontend_*.py
+integration_*.py
+precedence_*.py
+status_*.py
+investigation_*.py
+tracking_*.py
+webhook_*.py
+flow_*.py
+endpoint_*.py
+connectivity_*.py
+session_*.py
+live_*.py
+loading_*.py
+path_*.py
+update_*.py
+issues_*.py
+bug_*.py
+fix_*.py
+admin_*.py
+users_*.py
+product_*.py
+complete_*.py
+simulation_*.py
+comprehensive_*.py
+simple_*.py
+browser_*.py
+validation_*.py
+debug_*.py
+proxy_*.py
+config_*.py
+test_*.py
+display_*.py
+endpoint_*.py
+login_*.py
+communication_*.py
+ready_*.py
+ngrok_*.py
+docker_*.py
+stripe_*.py
+admin_*.py
+checkout_*.py
+workflow_*.py
+env_*.py
+basic_*.py
+django_*.py
+context_*.py
+override_*.py
+staging_*.py
+production_*.py
+ngrok_*.py
+
+# Build scripts
+build.sh
+deploy.sh
+deploy-*.sh
+start-*.sh
+verify-*.sh
+fix_*.sh
+test_*.sh

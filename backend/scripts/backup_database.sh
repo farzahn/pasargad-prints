@@ -9,11 +9,11 @@
 
 set -euo pipefail
 
-# Load environment variables
-if [ -f /app/.env.production ]; then
-    source /app/.env.production
+# Load environment variables from root .env file
+if [ -f /app/.env ]; then
+    source /app/.env
 else
-    echo "Error: .env.production file not found!"
+    echo "Error: .env file not found!"
     exit 1
 fi
 

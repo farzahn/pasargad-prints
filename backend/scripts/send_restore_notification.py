@@ -12,6 +12,13 @@ import logging
 from datetime import datetime
 import json
 
+# Load environment variables from root .env file
+from dotenv import load_dotenv
+from pathlib import Path
+root_dir = Path(__file__).resolve().parent.parent.parent
+env_path = root_dir / '.env'
+load_dotenv(env_path)
+
 # Add Django settings
 sys.path.append('/app')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pasargad_prints.settings_production')
@@ -20,7 +27,10 @@ import django
 django.setup()
 
 from django.core.mail import send_mail
-from decouple import config
+# Import config from our custom module
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+from pasargad_prints.config import config
 
 # Configure logging
 logging.basicConfig(

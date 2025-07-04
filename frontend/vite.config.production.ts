@@ -2,10 +2,12 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
+import path from 'path'
 
 // Production-optimized Vite configuration
 export default defineConfig(({ command, mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  // Load env from root directory
+  const env = loadEnv(mode, path.resolve(__dirname, '..'), '')
   const isProduction = mode === 'production'
   
   return {
@@ -222,7 +224,7 @@ export default defineConfig(({ command, mode }) => {
       port: parseInt(env.VITE_PORT) || 3000,
       strictPort: true,
       hmr: {
-        clientPort: 443
+        port: 3000
       },
       allowedHosts: [
         'localhost',
@@ -235,22 +237,22 @@ export default defineConfig(({ command, mode }) => {
       ],
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://backend:8000',
+          target: env.VITE_API_URL || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },
         '/admin': {
-          target: env.VITE_API_URL || 'http://backend:8000',
+          target: env.VITE_API_URL || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },
         '/static': {
-          target: env.VITE_API_URL || 'http://backend:8000',
+          target: env.VITE_API_URL || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },
         '/media': {
-          target: env.VITE_API_URL || 'http://backend:8000',
+          target: env.VITE_API_URL || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         }
@@ -260,7 +262,7 @@ export default defineConfig(({ command, mode }) => {
     // Preview server for production builds
     preview: {
       host: '0.0.0.0',
-      port: 4173,
+      port: 3000,
       strictPort: true,
       headers: {
         'Cache-Control': 'public, max-age=31536000',
@@ -297,6 +299,9 @@ export default defineConfig(({ command, mode }) => {
         '@types': '/src/types',
         '@services': '/src/services'
       }
-    }
+    },
+    
+    // Specify the env directory to be the root
+    envDir: path.resolve(__dirname, '..')
   }
 })

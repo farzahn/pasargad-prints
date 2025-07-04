@@ -14,6 +14,12 @@ import time
 from typing import Dict, List, Any, Tuple
 from pathlib import Path
 
+# Load environment variables from root .env file
+from dotenv import load_dotenv
+root_dir = Path(__file__).resolve().parent.parent.parent
+env_path = root_dir / '.env'
+load_dotenv(env_path)
+
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pasargad_prints.settings_production')
 django.setup()
@@ -26,7 +32,9 @@ from django.test.utils import override_settings
 
 import redis
 import requests
-from decouple import config
+# Import config from our custom module
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from pasargad_prints.config import config
 
 # Configure logging
 logging.basicConfig(

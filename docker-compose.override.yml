@@ -1,0 +1,39 @@
+# Development overrides for docker-compose.yml
+# This file is automatically loaded by docker-compose
+# Use this for development-specific configurations
+
+version: '3.8'
+
+services:
+  backend:
+    # Development specific settings
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=pasargad_prints.settings
+    volumes:
+      - ./backend:/app
+      - /app/venv
+    # Enable hot reload for development
+    command: python manage.py runserver 0.0.0.0:8000
+
+  frontend:
+    # Development specific settings
+    environment:
+      - VITE_PORT=3000
+      - VITE_HOST=0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    # Enable hot reload for development
+    command: npm run dev -- --host 0.0.0.0
+
+  db:
+    # Development database settings
+    environment:
+      - POSTGRES_DB=${DB_NAME:-pasargad_prints_dev}
+    # Expose database port for direct access in development
+    ports:
+      - "5432:5432"
+
+volumes:
+  frontend_node_modules:

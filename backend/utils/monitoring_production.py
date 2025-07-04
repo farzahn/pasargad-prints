@@ -30,7 +30,12 @@ from rest_framework import status
 import redis
 import psutil
 import requests
-from decouple import config
+# Import config from our custom module
+import sys
+from pathlib import Path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+from pasargad_prints.config import config
 
 # Configure logging
 logger = logging.getLogger('monitoring')

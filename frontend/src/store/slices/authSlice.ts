@@ -67,14 +67,61 @@ export const registerUser = createAsyncThunk(
     password_confirm: string
     phone?: string
     newsletter_subscription?: boolean
-  }) => {
-    const response = await api.post('/api/users/auth/register/', userData)
-    
-    // Store tokens
-    localStorage.setItem('accessToken', response.data.tokens.access)
-    localStorage.setItem('refreshToken', response.data.tokens.refresh)
-    
-    return response.data
+  }, { rejectWithValue }) => {
+    try {
+      console.log('🔍 authSlice - registerUser called with userData:', userData)
+      console.log('🔍 authSlice - userData individual fields:')
+      console.log('  - email:', userData.email)
+      console.log('  - username:', userData.username)  
+      console.log('  - first_name:', userData.first_name)
+      console.log('  - last_name:', userData.last_name)
+      console.log('  - password:', userData.password ? '[REDACTED]' : 'EMPTY')
+      console.log('  - password_confirm:', userData.password_confirm ? '[REDACTED]' : 'EMPTY')
+      console.log('  - phone:', userData.phone)
+      console.log('  - newsletter_subscription:', userData.newsletter_subscription)
+      
+      // Clean up data - remove empty strings and undefined values
+      const cleanedData = {
+        email: userData.email.trim(),
+        username: userData.username.trim(),
+        first_name: userData.first_name.trim(),
+        last_name: userData.last_name.trim(),
+        password: userData.password,
+        password_confirm: userData.password_confirm,
+        ...(userData.phone && { phone: userData.phone.trim() }),
+        newsletter_subscription: userData.newsletter_subscription || false
+      }
+      
+      console.log('🔍 authSlice - Cleaned data being sent:', cleanedData)
+      console.log('🔍 authSlice - Making API call to /api/users/auth/register/')
+      
+      const response = await api.post('/api/users/auth/register/', cleanedData)
+      
+      console.log('🔍 authSlice - API response:', response.data)
+      
+      // Store tokens
+      localStorage.setItem('accessToken', response.data.tokens.access)
+      localStorage.setItem('refreshToken', response.data.tokens.refresh)
+      
+      return response.data
+    } catch (error: any) {
+      console.log('🔍 authSlice - Registration error:', error)
+      console.log('🔍 authSlice - Error response:', error.response?.data)
+      console.log('🔍 authSlice - Error status:', error.response?.status)
+      
+      // Return detailed error information
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          Object.values(error.response?.data || {}).flat().join(', ') ||
+                          error.message || 
+                          'Registration failed'
+      
+      return rejectWithValue({
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data
+      })
+    }
   }
 )
 
@@ -182,7 +229,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.error.message || 'Registration failed'
+        state.error = (action.payload as any)?.message || action.error.message || 'Registration failed'
       })
       
       // Refresh token

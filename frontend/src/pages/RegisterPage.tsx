@@ -71,6 +71,25 @@ const RegisterPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
+      console.log('🔍 RegisterPage - Form data being sent:', formData)
+      console.log('🔍 RegisterPage - Individual fields:')
+      console.log('  - email:', formData.email)
+      console.log('  - username:', formData.username)
+      console.log('  - first_name:', formData.first_name)
+      console.log('  - last_name:', formData.last_name)
+      console.log('  - password:', formData.password ? '[REDACTED]' : 'EMPTY')
+      console.log('  - password_confirm:', formData.password_confirm ? '[REDACTED]' : 'EMPTY')
+      console.log('  - phone:', formData.phone)
+      console.log('  - newsletter_subscription:', formData.newsletter_subscription)
+      console.log('🔍 RegisterPage - Form data type check:')
+      console.log('  - typeof email:', typeof formData.email)
+      console.log('  - typeof username:', typeof formData.username)
+      console.log('  - typeof first_name:', typeof formData.first_name)
+      console.log('  - typeof last_name:', typeof formData.last_name)
+      console.log('  - typeof password:', typeof formData.password)
+      console.log('  - typeof password_confirm:', typeof formData.password_confirm)
+      console.log('  - typeof phone:', typeof formData.phone)
+      console.log('  - typeof newsletter_subscription:', typeof formData.newsletter_subscription)
       dispatch(registerUser(formData))
     }
   }

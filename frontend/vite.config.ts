@@ -1,9 +1,14 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { resolve } from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Load env file from parent directory (root of the project)
+  const env = loadEnv(mode, resolve(process.cwd(), '..'), '')
+  
+  return {
   plugins: [
     react(),
     VitePWA({
@@ -132,25 +137,31 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://backend:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
       '/admin': {
-        target: 'http://backend:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
       '/static': {
-        target: 'http://backend:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
       '/media': {
-        target: 'http://backend:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       }
     }
   },
-})
+  // Expose env variables to the app
+  define: {
+    'process.env': {}
+  },
+  // Specify the env directory
+  envDir: resolve(process.cwd(), '..')
+}})

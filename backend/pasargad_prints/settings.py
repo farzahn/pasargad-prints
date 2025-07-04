@@ -460,6 +460,24 @@ if USE_REDIS_CACHE:
                 'COMPRESS_MIN_LEN': 10,
                 'COMPRESS_LEVEL': 6,
             }
+        },
+        'api': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/2'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+                'CONNECTION_POOL_CLASS_KWARGS': {
+                    'max_connections': 50,
+                    'retry_on_timeout': True,
+                },
+                'MAX_CONNECTIONS': 50,
+                'KEY_PREFIX': 'pasargad_api',
+                'VERSION': 1,
+                'TIMEOUT': 300,  # 5 minutes default timeout
+                'COMPRESS_MIN_LEN': 10,
+                'COMPRESS_LEVEL': 6,
+            }
         }
     }
     
@@ -473,6 +491,14 @@ else:
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'LOCATION': 'unique-snowflake',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 4,
+            }
+        },
+        'api': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'api-cache',
             'OPTIONS': {
                 'MAX_ENTRIES': 1000,
                 'CULL_FREQUENCY': 4,

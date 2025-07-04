@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import type { AppDispatch, RootState } from '../store/index'
-import { fetchProducts, fetchCategories, setFilters } from '../store/slices/productsSlice'
+import { fetchProducts, fetchCategories, setFilters, clearError } from '../store/slices/productsSlice'
 import ProductCard from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { ProductGridSkeleton } from '../components/SkeletonLoader'
@@ -11,7 +11,7 @@ import MobileFilterPanel from '../components/MobileFilterPanel'
 const ProductsPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { products, categories, isLoading, filters } = useSelector((state: RootState) => state.products)
+  const { products, categories, isLoading, filters, error } = useSelector((state: RootState) => state.products)
   
   const [localFilters, setLocalFilters] = useState({
     category: searchParams.get('category') || '',
@@ -26,9 +26,14 @@ const ProductsPage = () => {
 
   useEffect(() => {
     dispatch(fetchCategories())
+    // Clear any previous errors when component mounts
+    dispatch(clearError())
   }, [dispatch])
 
   useEffect(() => {
+    // Clear any previous errors when filters change
+    dispatch(clearError())
+    
     const params: any = {}
     if (localFilters.category) params.category = localFilters.category
     if (localFilters.min_price) params.min_price = localFilters.min_price
@@ -155,6 +160,7 @@ const ProductsPage = () => {
               </label>
             </div>
 
+
             {/* Sort Order */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
@@ -195,7 +201,34 @@ const ProductsPage = () => {
             <ProductGridSkeleton />
           ) : (
             <>
-              {products.length === 0 ? (
+              {error ? (
+                <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-red-200">
+                  <svg
+                    className="w-16 h-16 text-red-400 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Products</h3>
+                  <p className="text-red-600 mb-6">{error}</p>
+                  <button
+                    onClick={() => {
+                      dispatch(fetchProducts())
+                      dispatch(fetchCategories())
+                    }}
+                    className="text-red-600 hover:text-red-700 font-medium border border-red-300 px-4 py-2 rounded-md hover:bg-red-50"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : products.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
                   <button
@@ -293,6 +326,7 @@ const ProductsPage = () => {
               <span className="ml-2 text-sm text-gray-700">In Stock Only</span>
             </label>
           </div>
+
 
           {/* Sort Order */}
           <div>

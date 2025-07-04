@@ -52,7 +52,7 @@ export interface Product {
   category_name: string
   main_image?: string
   is_in_stock: boolean
-  is_featured: boolean
+  stock_quantity: number
   average_rating: number
   review_count: number
 }

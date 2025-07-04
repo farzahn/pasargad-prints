@@ -50,11 +50,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/products?featured=true" className="text-gray-300 hover:text-white transition-colors">
-                  Featured Items
-                </Link>
-              </li>
-              <li>
                 <Link to="/cart" className="text-gray-300 hover:text-white transition-colors">
                   Shopping Cart
                 </Link>

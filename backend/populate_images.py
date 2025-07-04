@@ -97,7 +97,6 @@ new_products = [
         'dimensions': '30 x 20 x 15',
         'material': 'PLA',
         'print_time': 12,
-        'is_featured': True,
         'images': [
             'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=600&fit=crop&q=80',
             'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop&q=80',
@@ -115,7 +114,6 @@ new_products = [
         'dimensions': '15 x 10 x 5',
         'material': 'ABS',
         'print_time': 6,
-        'is_featured': True,
         'images': [
             'https://images.unsplash.com/photo-1563207153-f403bf289096?w=800&h=600&fit=crop&q=80',
             'https://images.unsplash.com/photo-1516192518150-0d8fee5425e3?w=800&h=600&fit=crop&q=80',
@@ -156,4 +154,4 @@ for prod_data in new_products:
 print("\n✅ Product image population completed!")
 print(f"Total products: {Product.objects.count()}")
 print(f"Total product images: {ProductImage.objects.count()}")
-print(f"Featured products: {Product.objects.filter(is_featured=True).count()}")
+# Featured products functionality removed

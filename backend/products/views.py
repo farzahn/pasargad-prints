@@ -42,11 +42,11 @@ class ProductListView(CacheMixin, generics.ListAPIView):
     serializer_class = ProductListSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'is_featured']
+    filterset_fields = ['category']
     search_fields = ['name', 'description', 'material']
     ordering_fields = ['price', 'created_at', 'name']
     ordering = ['-created_at']
-    cache_timeout = 300  # 5 minutes
+    cache_timeout = 60  # 1 minute
     cache_key_prefix = 'product_list'
 
     def get_queryset(self):
@@ -72,17 +72,32 @@ class ProductListView(CacheMixin, generics.ListAPIView):
         
         # In stock filtering
         in_stock = self.request.query_params.get('in_stock')
-        if in_stock and in_stock.lower() == 'true':
-            queryset = queryset.filter(stock_quantity__gt=0)
+        if in_stock:
+            if in_stock.lower() == 'true':
+                queryset = queryset.filter(stock_quantity__gt=0)
+            elif in_stock.lower() == 'false':
+                queryset = queryset.filter(stock_quantity=0)
         
         # Full-text search optimization
         search_query = self.request.query_params.get('search')
         if search_query:
-            queryset = queryset.filter(
-                Q(search_vector=SearchQuery(search_query)) |
-                Q(name__icontains=search_query) |
-                Q(description__icontains=search_query)
-            )
+            # Use database-agnostic search for compatibility
+            from django.conf import settings
+            if getattr(settings, 'DATABASE_TYPE', 'sqlite') == 'postgresql':
+                # Use PostgreSQL full-text search
+                queryset = queryset.filter(
+                    Q(search_vector=SearchQuery(search_query)) |
+                    Q(name__icontains=search_query) |
+                    Q(description__icontains=search_query)
+                )
+            else:
+                # Use simple text search for SQLite
+                queryset = queryset.filter(
+                    Q(name__icontains=search_query) |
+                    Q(description__icontains=search_query) |
+                    Q(material__icontains=search_query) |
+                    Q(category__name__icontains=search_query)
+                )
         
         return queryset
     
@@ -134,15 +149,6 @@ class ProductDetailView(CacheMixin, generics.RetrieveAPIView):
         return Response(cached_data)
 
 
-@method_decorator(cache_page(3600), name='dispatch')  # 1 hour cache
-class FeaturedProductsView(generics.ListAPIView):
-    queryset = Product.objects.filter(is_active=True, is_featured=True).select_related(
-        'category'
-    ).prefetch_related(
-        Prefetch('images', queryset=ProductImage.objects.filter(is_main=True))
-    )
-    serializer_class = ProductListSerializer
-    permission_classes = [permissions.AllowAny]
 
 
 class ProductReviewListCreateView(generics.ListCreateAPIView):
@@ -201,16 +207,27 @@ def advanced_search(request):
         
         # Full-text search if query provided
         if query and len(query) >= 2:
-            search_query = SearchQuery(query)
-            search_vector = SearchVector('name', weight='A') + \
-                           SearchVector('description', weight='B') + \
-                           SearchVector('category__name', weight='C') + \
-                           SearchVector('material', weight='D')
-            
-            products = products.annotate(
-                search=search_vector,
-                rank=SearchRank(search_vector, search_query)
-            ).filter(search=search_query).order_by('-rank')
+            from django.conf import settings
+            if getattr(settings, 'DATABASE_TYPE', 'sqlite') == 'postgresql':
+                # Use PostgreSQL full-text search
+                search_query = SearchQuery(query)
+                search_vector = SearchVector('name', weight='A') + \
+                               SearchVector('description', weight='B') + \
+                               SearchVector('category__name', weight='C') + \
+                               SearchVector('material', weight='D')
+                
+                products = products.annotate(
+                    search=search_vector,
+                    rank=SearchRank(search_vector, search_query)
+                ).filter(search=search_query).order_by('-rank')
+            else:
+                # Use simple text search for SQLite
+                products = products.filter(
+                    Q(name__icontains=query) |
+                    Q(description__icontains=query) |
+                    Q(category__name__icontains=query) |
+                    Q(material__icontains=query)
+                ).order_by('-created_at')
         
         # Category filter
         category_ids = request.GET.getlist('category[]')
@@ -255,10 +272,6 @@ def advanced_search(request):
         if max_print_time:
             products = products.filter(print_time__lte=max_print_time)
         
-        # Featured filter
-        featured_only = request.GET.get('featured', '').lower() == 'true'
-        if featured_only:
-            products = products.filter(is_featured=True)
         
         # Rating filter
         min_rating = request.GET.get('min_rating')

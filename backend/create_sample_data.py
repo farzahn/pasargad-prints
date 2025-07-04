@@ -48,8 +48,7 @@ products_data = [
         'stock_quantity': 50,
         'weight': '0.05',
         'material': 'PLA',
-        'print_time': 4,
-        'is_featured': True
+        'print_time': 4
     },
     {
         'name': 'Geometric Planter',
@@ -60,8 +59,7 @@ products_data = [
         'stock_quantity': 30,
         'weight': '0.15',
         'material': 'PETG',
-        'print_time': 6,
-        'is_featured': True
+        'print_time': 6
     },
     {
         'name': 'Custom Name Keychain',
@@ -72,8 +70,7 @@ products_data = [
         'stock_quantity': 100,
         'weight': '0.02',
         'material': 'PLA',
-        'print_time': 1,
-        'is_featured': True
+        'print_time': 1
     },
     {
         'name': 'Phone Stand',
@@ -84,8 +81,7 @@ products_data = [
         'stock_quantity': 75,
         'weight': '0.08',
         'material': 'ABS',
-        'print_time': 3,
-        'is_featured': False
+        'print_time': 3
     },
     {
         'name': 'Knight Miniature Set',
@@ -96,8 +92,7 @@ products_data = [
         'stock_quantity': 25,
         'weight': '0.10',
         'material': 'Resin',
-        'print_time': 8,
-        'is_featured': False
+        'print_time': 8
     }
 ]
 

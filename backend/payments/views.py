@@ -47,6 +47,18 @@ def create_checkout_session(request):
         if not cart or not cart.items.exists():
             return Response({'error': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate stock availability before creating checkout session
+        for item in cart.items.all():
+            if not item.product.is_in_stock or item.product.stock_quantity == 0:
+                return Response({
+                    'error': f'{item.product.name} is out of stock. Please remove it from your cart.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if item.quantity > item.product.stock_quantity:
+                return Response({
+                    'error': f'Only {item.product.stock_quantity} units of {item.product.name} available. You have {item.quantity} in cart.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         line_items = _prepare_line_items(cart, request)
         metadata = _prepare_metadata(cart, request)
 

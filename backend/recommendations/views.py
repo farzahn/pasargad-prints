@@ -64,7 +64,7 @@ def get_product_recommendations(request, product_id):
             category_products = Product.objects.filter(
                 category=product.category,
                 is_active=True
-            ).exclude(id=product.id).order_by('-is_featured', '-created_at')[:4]
+            ).exclude(id=product.id).order_by('-created_at')[:4]
             
             for p in category_products:
                 if p not in [r['product'] for r in recommendations]:
@@ -159,7 +159,7 @@ def get_personalized_recommendations(request):
                         is_active=True
                     ).exclude(
                         id__in=[p.id for p in recommendations]
-                    ).order_by('-is_featured', '-created_at')[:8]
+                    ).order_by('-created_at')[:8]
                     
                     recommendations.extend(category_products)
         
@@ -179,7 +179,7 @@ def get_personalized_recommendations(request):
                     recommendations = Product.objects.filter(
                         category_id__in=viewed_categories,
                         is_active=True
-                    ).order_by('-is_featured', '-created_at')[:8]
+                    ).order_by('-created_at')[:8]
         
         # If still not enough, get popular products
         if len(recommendations) < 8:

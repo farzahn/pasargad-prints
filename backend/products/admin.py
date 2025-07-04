@@ -33,12 +33,12 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'sku', 'category', 'price', 'stock_quantity', 'stock_status', 'is_active', 'is_featured', 'created_at')
-    list_filter = ('category', 'is_active', 'is_featured', 'material', 'created_at')
+    list_display = ('name', 'sku', 'category', 'price', 'stock_quantity', 'stock_status', 'is_active', 'created_at')
+    list_filter = ('category', 'is_active', 'material', 'created_at')
     search_fields = ('name', 'sku', 'description')
     ordering = ('-created_at',)
     inlines = [ProductImageInline]
-    list_editable = ('price', 'stock_quantity', 'is_active', 'is_featured')
+    list_editable = ('price', 'stock_quantity', 'is_active')
     list_per_page = 20
     
     fieldsets = (
@@ -53,8 +53,8 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('weight', 'dimensions', 'material', 'print_time')
         }),
         ('Status', {
-            'fields': ('is_active', 'is_featured'),
-            'description': 'Active products are visible on the site. Featured products appear on the homepage.'
+            'fields': ('is_active',),
+            'description': 'Active products are visible on the site.'
         }),
     )
     
@@ -72,17 +72,8 @@ class ProductAdmin(admin.ModelAdmin):
         if 'stock_quantity' in form.changed_data:
             self.message_user(request, f'Stock updated for {obj.name}: {obj.stock_quantity} units')
     
-    actions = ['make_featured', 'remove_featured', 'activate_products', 'deactivate_products']
+    actions = ['activate_products', 'deactivate_products']
     
-    def make_featured(self, request, queryset):
-        updated = queryset.update(is_featured=True)
-        self.message_user(request, f'{updated} product(s) marked as featured.')
-    make_featured.short_description = 'Mark selected products as featured'
-    
-    def remove_featured(self, request, queryset):
-        updated = queryset.update(is_featured=False)
-        self.message_user(request, f'{updated} product(s) removed from featured.')
-    remove_featured.short_description = 'Remove featured status'
     
     def activate_products(self, request, queryset):
         updated = queryset.update(is_active=True)

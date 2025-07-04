@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import type { AppDispatch, RootState } from '../store/index'
-import { fetchFeaturedProducts } from '../store/slices/productsSlice'
+import { fetchProducts, clearError } from '../store/slices/productsSlice'
 import ProductCard from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import BannerSystem from '../components/banners/BannerSystem'
@@ -11,10 +11,11 @@ import { OrganizationStructuredData, WebsiteStructuredData } from '../components
 
 const HomePage = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const { featuredProducts, isLoading } = useSelector((state: RootState) => state.products)
+  const { products, isLoading, error } = useSelector((state: RootState) => state.products)
 
   useEffect(() => {
-    dispatch(fetchFeaturedProducts())
+    dispatch(clearError())
+    dispatch(fetchProducts({ ordering: '-created_at' }))
   }, [dispatch])
 
   return (
@@ -87,28 +88,52 @@ const HomePage = () => {
       {/* Middle Banners (Promotions/Sales) */}
       <BannerSystem position="middle" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" />
 
-      {/* Featured Products */}
+      {/* Latest Products */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">Featured Products</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Latest Products</h2>
           
           {isLoading ? (
             <LoadingSpinner />
+          ) : error ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-red-200">
+              <svg
+                className="w-16 h-16 text-red-400 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Products</h3>
+              <p className="text-red-600 mb-6">{error}</p>
+              <button
+                onClick={() => dispatch(fetchProducts({ ordering: '-created_at' }))}
+                className="text-red-600 hover:text-red-700 font-medium border border-red-300 px-4 py-2 rounded-md hover:bg-red-50"
+              >
+                Try Again
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.slice(0, 4).map((product) => (
+              {products.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
 
-          {featuredProducts.length > 0 && (
+          {products.length > 0 && (
             <div className="text-center mt-12">
               <Link
-                to="/products?featured=true"
+                to="/products"
                 className="inline-block bg-primary-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-primary-700 transition-colors"
               >
-                View All Featured Products
+                View All Products
               </Link>
             </div>
           )}

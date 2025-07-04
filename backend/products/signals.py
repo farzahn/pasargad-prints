@@ -16,7 +16,6 @@ def invalidate_product_caches(sender, instance, **kwargs):
         f'product:{instance.id}',
         f'product:{instance.id}:*',
         'product_list:*',
-        'featured_products',
     ]
     
     if instance.category_id:

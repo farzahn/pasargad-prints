@@ -12,7 +12,7 @@ User = get_user_model()
 print("🔍 Testing Admin Stock Update Functionality\n")
 
 # Get a product to demonstrate
-product = Product.objects.filter(is_featured=True).first()
+product = Product.objects.filter(is_active=True).first()
 if product:
     print(f"Product: {product.name}")
     print(f"Current Stock: {product.stock_quantity}")
@@ -36,7 +36,7 @@ if product:
 
 print("\n📊 Admin Capabilities Summary:")
 print("• Direct stock editing from list view")
-print("• Bulk actions (featured, activate/deactivate)")
+print("• Bulk actions (activate/deactivate)")
 print("• Visual stock status indicators")
 print("• Low stock warnings")
 print("• Image management (URL or upload)")

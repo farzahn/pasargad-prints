@@ -63,13 +63,12 @@ def warm_cache():
         category_data = CategorySerializer(categories, many=True).data
         cache.set('category_list:all', category_data, timeout=3600)
         
-        # Cache featured products
-        featured_products = Product.objects.filter(
-            is_active=True, 
-            is_featured=True
-        ).select_related('category').prefetch_related('images')
-        featured_data = ProductListSerializer(featured_products, many=True).data
-        cache.set('featured_products', featured_data, timeout=3600)
+        # Cache recent products (replacing featured products functionality)
+        recent_products = Product.objects.filter(
+            is_active=True
+        ).select_related('category').prefetch_related('images').order_by('-created_at')[:10]
+        recent_data = ProductListSerializer(recent_products, many=True).data
+        cache.set('recent_products', recent_data, timeout=3600)
         
         logger.info("Cache warmed up successfully")
         return "Cache warmed successfully"

@@ -97,11 +97,6 @@ export default function ProductsPage() {
                   </span>
                 </div>
                 
-                {product.is_featured && (
-                  <div className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-center">
-                    Featured
-                  </div>
-                )}
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Rating:</span>

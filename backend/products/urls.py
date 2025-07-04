@@ -7,7 +7,6 @@ urlpatterns = [
     
     # Products
     path('', views.ProductListView.as_view(), name='product_list'),
-    path('featured/', views.FeaturedProductsView.as_view(), name='featured_products'),
     path('search/', views.search_products, name='product_search'),
     path('advanced-search/', views.advanced_search, name='advanced_search'),
     path('low-stock/', views.get_low_stock_products, name='low_stock_products'),

@@ -39,6 +39,17 @@ def add_to_cart(request):
         quantity = serializer.validated_data['quantity']
         product = get_object_or_404(Product, id=product_id)
         
+        # Validate stock availability before adding to cart
+        if not product.is_in_stock or product.stock_quantity == 0:
+            return Response({
+                'error': 'This product is currently out of stock'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if quantity > product.stock_quantity:
+            return Response({
+                'error': f'Only {product.stock_quantity} items available in stock'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # Check if item already exists in cart
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,

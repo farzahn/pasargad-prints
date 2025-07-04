@@ -74,7 +74,6 @@ new_products = [
         'weight': '0.25',
         'material': 'PLA',
         'print_time': 5,
-        'is_featured': True,
         'main_image': 'https://picsum.photos/800/600?random=16',
         'images': [
             'https://picsum.photos/800/600?random=16',
@@ -92,7 +91,6 @@ new_products = [
         'weight': '0.30',
         'material': 'PETG',
         'print_time': 8,
-        'is_featured': True,
         'main_image': 'https://picsum.photos/800/600?random=19',
         'images': [
             'https://picsum.photos/800/600?random=19',
@@ -110,7 +108,6 @@ new_products = [
         'weight': '0.05',
         'material': 'PLA',
         'print_time': 2,
-        'is_featured': False,
         'main_image': 'https://picsum.photos/800/600?random=22',
         'images': [
             'https://picsum.photos/800/600?random=22',
@@ -127,7 +124,6 @@ new_products = [
         'weight': '0.04',
         'material': 'Resin',
         'print_time': 3,
-        'is_featured': False,
         'main_image': 'https://picsum.photos/800/600?random=24',
         'images': [
             'https://picsum.photos/800/600?random=24',
@@ -145,7 +141,6 @@ new_products = [
         'weight': '0.20',
         'material': 'PLA',
         'print_time': 6,
-        'is_featured': False,
         'main_image': 'https://picsum.photos/800/600?random=27',
         'images': [
             'https://picsum.photos/800/600?random=27',
@@ -192,4 +187,4 @@ for prod_data in new_products:
 print("\n✓ Product images updated successfully!")
 print(f"Total products: {Product.objects.count()}")
 print(f"Total product images: {ProductImage.objects.count()}")
-print(f"Featured products: {Product.objects.filter(is_featured=True).count()}")
+print(f"Active products: {Product.objects.filter(is_active=True).count()}")

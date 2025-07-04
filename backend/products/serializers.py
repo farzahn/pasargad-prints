@@ -61,7 +61,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'price', 'category_name', 'main_image', 
-            'is_in_stock', 'is_featured', 'average_rating', 'review_count'
+            'is_in_stock', 'stock_quantity', 'average_rating', 'review_count'
         ]
 
     def get_main_image(self, obj):
@@ -92,6 +92,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     reviews = ProductReviewSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
+    is_in_stock = serializers.ReadOnlyField()
+    is_low_stock = serializers.ReadOnlyField()
 
     class Meta:
         model = Product

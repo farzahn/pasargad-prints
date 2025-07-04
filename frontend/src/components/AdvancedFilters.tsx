@@ -6,7 +6,6 @@ interface FilterState {
   priceRange: [number, number]
   rating: number
   inStock: boolean
-  featured: boolean
   sortBy: string
   search: string
 }
@@ -24,7 +23,6 @@ const AdvancedFilters = ({ categories, onFiltersChange, initialFilters, productC
     priceRange: [0, 1000],
     rating: 0,
     inStock: false,
-    featured: false,
     sortBy: '-created_at',
     search: '',
     ...initialFilters,
@@ -70,7 +68,7 @@ const AdvancedFilters = ({ categories, onFiltersChange, initialFilters, productC
     setFilters(prev => ({ ...prev, rating: prev.rating === rating ? 0 : rating }))
   }
 
-  const handleCheckboxChange = (field: 'inStock' | 'featured') => {
+  const handleCheckboxChange = (field: 'inStock') => {
     setFilters(prev => ({ ...prev, [field]: !prev[field] }))
   }
 
@@ -88,7 +86,6 @@ const AdvancedFilters = ({ categories, onFiltersChange, initialFilters, productC
       priceRange: [0, 1000],
       rating: 0,
       inStock: false,
-      featured: false,
       sortBy: '-created_at',
       search: '',
     }
@@ -101,7 +98,6 @@ const AdvancedFilters = ({ categories, onFiltersChange, initialFilters, productC
     (filters.priceRange[0] > 0 || filters.priceRange[1] < 1000 ? 1 : 0) +
     (filters.rating > 0 ? 1 : 0) +
     (filters.inStock ? 1 : 0) +
-    (filters.featured ? 1 : 0) +
     (filters.search ? 1 : 0)
 
   return (
@@ -318,15 +314,6 @@ const AdvancedFilters = ({ categories, onFiltersChange, initialFilters, productC
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
               <span className="ml-3 text-sm text-gray-700">In Stock Only</span>
-            </label>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.featured}
-                onChange={() => handleCheckboxChange('featured')}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span className="ml-3 text-sm text-gray-700">Featured Products</span>
             </label>
           </div>
         )}

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import type { AppDispatch, RootState } from '../store/index'
-import { fetchProducts, fetchCategories, setFilters } from '../store/slices/productsSlice'
+import { fetchProducts, fetchCategories, setFilters, clearError } from '../store/slices/productsSlice'
 import ProductCard from '../components/ProductCard'
 import AdvancedFilters from '../components/AdvancedFilters'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -19,16 +19,57 @@ interface ActiveFilter {
 const EnhancedProductsPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { products, categories, isLoading, pagination } = useSelector((state: RootState) => state.products)
+  const { products, categories, isLoading, pagination, error } = useSelector((state: RootState) => state.products)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 
   useEffect(() => {
     dispatch(fetchCategories())
+    // Clear any previous errors when component mounts
+    dispatch(clearError())
   }, [dispatch])
 
+  // Handle initial URL parameters on mount
+  useEffect(() => {
+    const initialParams: any = {}
+    
+    if (searchParams.get('category')) {
+      initialParams.category = searchParams.get('category')
+    }
+    if (searchParams.get('min_price')) {
+      initialParams.min_price = searchParams.get('min_price')
+    }
+    if (searchParams.get('max_price')) {
+      initialParams.max_price = searchParams.get('max_price')
+    }
+    if (searchParams.get('in_stock')) {
+      initialParams.in_stock = searchParams.get('in_stock')
+    }
+    if (searchParams.get('search')) {
+      initialParams.search = searchParams.get('search')
+    }
+    if (searchParams.get('ordering')) {
+      initialParams.ordering = searchParams.get('ordering')
+    }
+    if (searchParams.get('min_rating')) {
+      initialParams.min_rating = searchParams.get('min_rating')
+    }
+
+    // Only fetch if we have initial parameters
+    if (Object.keys(initialParams).length > 0) {
+      dispatch(setFilters(initialParams))
+      dispatch(fetchProducts(initialParams))
+    } else {
+      // Fetch all products if no filters
+      dispatch(fetchProducts())
+    }
+  }, [dispatch, searchParams])
+
   const handleFiltersChange = useCallback((filters: any) => {
+    // Clear any previous errors when filters change
+    dispatch(clearError())
+    
     const params: any = {}
     const newActiveFilters: ActiveFilter[] = []
 
@@ -82,15 +123,6 @@ const EnhancedProductsPage = () => {
       })
     }
 
-    if (filters.featured) {
-      params.is_featured = 'true'
-      newActiveFilters.push({
-        id: 'featured',
-        label: 'Featured',
-        type: 'featured',
-        value: true,
-      })
-    }
 
     if (filters.search) {
       params.search = filters.search
@@ -136,7 +168,6 @@ const EnhancedProductsPage = () => {
     ] as [number, number],
     rating: parseInt(searchParams.get('min_rating') || '0'),
     inStock: searchParams.get('in_stock') === 'true',
-    featured: searchParams.get('is_featured') === 'true',
     sortBy: searchParams.get('ordering') || '-created_at',
     search: searchParams.get('search') || '',
   }
@@ -160,7 +191,6 @@ const EnhancedProductsPage = () => {
                 priceRange: [0, 1000],
                 rating: 0,
                 inStock: false,
-                featured: false,
                 sortBy: '-created_at',
                 search: '',
               })}
@@ -263,7 +293,34 @@ const EnhancedProductsPage = () => {
             <ProductGridSkeleton />
           ) : (
             <>
-              {products.length === 0 ? (
+              {error ? (
+                <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-red-200">
+                  <svg
+                    className="w-16 h-16 text-red-400 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Products</h3>
+                  <p className="text-red-600 mb-6">{error}</p>
+                  <button
+                    onClick={() => {
+                      dispatch(fetchProducts())
+                      dispatch(fetchCategories())
+                    }}
+                    className="text-red-600 hover:text-red-700 font-medium border border-red-300 px-4 py-2 rounded-md hover:bg-red-50"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : products.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-lg shadow-sm">
                   <svg
                     className="w-16 h-16 text-gray-400 mx-auto mb-4"
@@ -286,7 +343,6 @@ const EnhancedProductsPage = () => {
                       priceRange: [0, 1000],
                       rating: 0,
                       inStock: false,
-                      featured: false,
                       sortBy: '-created_at',
                       search: '',
                     })}

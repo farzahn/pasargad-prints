@@ -33,7 +33,6 @@ class Product(models.Model):
     material = models.CharField(max_length=100, default="PLA")
     print_time = models.PositiveIntegerField(help_text="Print time in minutes")
     is_active = models.BooleanField(default=True)
-    is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -6,15 +6,15 @@ django.setup()
 
 from products.models import Product
 
-# Get all featured products
-featured_products = Product.objects.filter(is_featured=True)
+# Get all products and update stock
+all_products = Product.objects.filter(is_active=True)
 
-print("Updating stock for featured products:\n")
+print("Updating stock for all products:\n")
 
-for product in featured_products:
+for product in all_products:
     old_stock = product.stock_quantity
     # Set a good amount of stock for testing
-    new_stock = 100
+    new_stock = 100 if product.price > 50 else 50
     product.stock_quantity = new_stock
     product.save()
     
@@ -24,23 +24,15 @@ for product in featured_products:
     print(f"  Price: ${product.price}")
     print()
 
-# Also update non-featured products to have some stock
-non_featured = Product.objects.filter(is_featured=False)
-for product in non_featured:
-    if product.stock_quantity < 50:
-        product.stock_quantity = 50
-        product.save()
-        print(f"✓ Updated {product.name} to 50 units")
-
 print("\n📊 Stock Summary:")
 print(f"Total products: {Product.objects.count()}")
-print(f"Featured products: {Product.objects.filter(is_featured=True).count()}")
+print(f"Active products: {Product.objects.filter(is_active=True).count()}")
 print(f"In stock products: {Product.objects.filter(stock_quantity__gt=0).count()}")
 print(f"Out of stock products: {Product.objects.filter(stock_quantity=0).count()}")
 
 # Show all products with their current stock
 print("\n📦 All Products Stock Status:")
 print("-" * 60)
-for product in Product.objects.all().order_by('-is_featured', 'name'):
-    status = "⭐ FEATURED" if product.is_featured else ""
+for product in Product.objects.all().order_by('-created_at', 'name'):
+    status = "✅ ACTIVE" if product.is_active else "❌ INACTIVE"
     print(f"{product.name:<30} Stock: {product.stock_quantity:>4} {status}")

@@ -6,7 +6,6 @@ import type { Product, Category, ProductDetail, ApiResponse } from '../../types'
 
 export interface ProductsState {
   products: Product[]
-  featuredProducts: Product[]
   currentProduct: ProductDetail | null
   categories: Category[]
   isLoading: boolean
@@ -28,7 +27,6 @@ export interface ProductsState {
 
 const initialState: ProductsState = {
   products: [],
-  featuredProducts: [],
   currentProduct: null,
   categories: [],
   isLoading: false,
@@ -44,28 +42,25 @@ const initialState: ProductsState = {
 // Async thunks
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
-  async (params?: Record<string, any>) => {
-    const searchParams = new URLSearchParams()
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, value.toString())
-        }
-      })
+  async (params?: Record<string, any>, { rejectWithValue }) => {
+    try {
+      const searchParams = new URLSearchParams()
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            searchParams.append(key, value.toString())
+          }
+        })
+      }
+      
+      const response = await api.get(`/api/products/?${searchParams.toString()}`)
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch products')
     }
-    
-    const response = await api.get(`/api/products/?${searchParams.toString()}`)
-    return response.data
   }
 )
 
-export const fetchFeaturedProducts = createAsyncThunk(
-  'products/fetchFeatured',
-  async () => {
-    const response = await api.get('/api/products/featured/')
-    return response.data
-  }
-)
 
 export const fetchProductDetail = createAsyncThunk(
   'products/fetchDetail',
@@ -77,9 +72,13 @@ export const fetchProductDetail = createAsyncThunk(
 
 export const fetchCategories = createAsyncThunk(
   'products/fetchCategories',
-  async () => {
-    const response = await api.get('/api/products/categories/')
-    return response.data
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/products/categories/')
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch categories')
+    }
   }
 )
 
@@ -129,23 +128,9 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch products'
+        state.error = action.payload as string || action.error.message || 'Failed to fetch products'
       })
-      
-      // Fetch featured products
-      .addCase(fetchFeaturedProducts.pending, (state) => {
-        state.isLoading = true
-        state.error = null
-      })
-      .addCase(fetchFeaturedProducts.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.featuredProducts = action.payload.results || action.payload
-        state.error = null
-      })
-      .addCase(fetchFeaturedProducts.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch featured products'
-      })
+
       
       // Fetch product detail
       .addCase(fetchProductDetail.pending, (state) => {
@@ -174,7 +159,7 @@ const productsSlice = createSlice({
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch categories'
+        state.error = action.payload as string || action.error.message || 'Failed to fetch categories'
       })
       
       // Search products

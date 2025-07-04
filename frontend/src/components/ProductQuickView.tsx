@@ -260,7 +260,6 @@ const ProductQuickView = ({ productId, isOpen, onClose }: ProductQuickViewProps)
                           category_name: productDetail.category_name,
                           main_image: productDetail.main_image,
                           is_in_stock: productDetail.is_in_stock,
-                          is_featured: productDetail.is_featured,
                           average_rating: productDetail.average_rating,
                           review_count: productDetail.review_count,
                         }} 

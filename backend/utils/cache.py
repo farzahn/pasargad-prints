@@ -17,7 +17,6 @@ class CacheKeys:
     USER_CART = 'user:{user_id}:cart'
     USER_WISHLIST = 'user:{user_id}:wishlist'
     USER_RECOMMENDATIONS = 'user:{user_id}:recommendations'
-    FEATURED_PRODUCTS = 'featured_products'
     PROMOTION_ACTIVE = 'promotions:active'
     ORDER_STATS = 'order_stats:{period}'
     
@@ -118,7 +117,7 @@ def get_or_set_cache(key, func, timeout=300, cache_alias='default'):
 
 class CacheMixin:
     """Mixin for viewsets to add caching capabilities"""
-    cache_timeout = 300
+    cache_timeout = 60
     cache_key_prefix = ''
     cache_alias = 'api'
     
@@ -161,7 +160,7 @@ class CacheMixin:
 # Cache invalidation signals
 def invalidate_product_cache(product_id=None, category_id=None):
     """Invalidate product-related caches"""
-    patterns = ['product_list:*', 'featured_products']
+    patterns = ['product_list:*']
     
     if product_id:
         patterns.append(f'product:{product_id}')

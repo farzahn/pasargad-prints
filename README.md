@@ -7,14 +7,33 @@ A modern, full-stack e-commerce platform for unique 3D-printed products built wi
 Before running the application, you must create a `.env` file with your configuration:
 
 ```bash
-cp .env.example .env
+# Create .env file in the project root
+cat > .env << 'EOF'
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+DB_NAME=pasargad_prints
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+# Stripe Settings (get test keys from https://stripe.com/docs/keys)
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+
+# Email Settings (Gmail SMTP)
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+
+# Frontend API URL
+VITE_API_URL=http://localhost:8000/api
+EOF
 ```
 
-Then edit `.env` and add your own:
-- Stripe API keys (get test keys from https://stripe.com/docs/keys)
-- Email credentials
-- Database password (for production)
-- Django secret key (generate a new one for production)
+**Required Configuration:**
+- Get Stripe test keys from https://stripe.com/docs/keys
+- Use Gmail App Password for email (not your regular password)
+- Generate a secure SECRET_KEY for production
 
 ## 🚀 Features
 
@@ -100,7 +119,7 @@ pasargad-prints/
 - Node.js 18+ (for local development)
 - Python 3.11+ (for local development)
 
-### Quick Start with Docker
+### 🚀 Quick Start with Docker (Recommended)
 
 1. Clone the repository:
 ```bash
@@ -108,35 +127,93 @@ git clone <repository-url>
 cd pasargad-prints
 ```
 
-2. Create environment file for backend:
+2. Create environment file (see Environment Setup above):
 ```bash
-cp backend/.env.example backend/.env
+# Create .env file with all required variables
+cat > .env << 'EOF'
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+DB_NAME=pasargad_prints
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+# Stripe Settings (get test keys from https://stripe.com/docs/keys)
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+
+# Email Settings (Gmail SMTP)
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+
+# Frontend API URL
+VITE_API_URL=http://localhost:8000/api
+EOF
 ```
 
-3. Update the environment variables in `docker-compose.yml`:
-- `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY`
-- `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD`
-- `SECRET_KEY` (generate a new one for production)
+3. **Edit the `.env` file** with your actual keys and credentials
 
-4. Build and run with Docker Compose:
+4. Build and start all services:
 ```bash
 docker-compose up --build
 ```
 
-5. Run database migrations:
+5. In a new terminal, run database migrations:
 ```bash
 docker-compose exec backend python manage.py migrate
 ```
 
-6. Create a superuser:
+6. Create a superuser account:
 ```bash
 docker-compose exec backend python manage.py createsuperuser
 ```
 
-7. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/api
-- Django Admin: http://localhost:8000/admin
+7. **🎉 Access the application:**
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000/api
+- **Django Admin**: http://localhost:8000/admin
+
+## 🔄 Managing the Application
+
+### Starting the Platform
+```bash
+# Start all services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Start with rebuild
+docker-compose up --build
+```
+
+### Stopping the Platform
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (clears database)
+docker-compose down -v
+```
+
+### Useful Commands
+```bash
+# View logs
+docker-compose logs -f
+
+# Execute commands in backend container
+docker-compose exec backend python manage.py <command>
+
+# Execute commands in frontend container
+docker-compose exec frontend npm run <command>
+
+# Access backend shell
+docker-compose exec backend python manage.py shell
+
+# Access database
+docker-compose exec db psql -U postgres -d pasargad_prints
+```
 
 ### Local Development
 

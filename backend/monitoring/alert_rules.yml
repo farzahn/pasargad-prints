@@ -1,0 +1,342 @@
+# Prometheus Alert Rules for Pasargad Prints Production
+
+groups:
+  # System-level alerts
+  - name: system_alerts
+    rules:
+      - alert: HighCpuUsage
+        expr: cpu_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-cpu"
+
+      - alert: CriticalCpuUsage
+        expr: cpu_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is {{ $value }}% for more than 2 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/critical-cpu"
+
+      - alert: HighMemoryUsage
+        expr: memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-memory"
+
+      - alert: CriticalMemoryUsage
+        expr: memory_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is {{ $value }}% for more than 2 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/critical-memory"
+
+      - alert: HighDiskUsage
+        expr: disk_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-disk"
+
+      - alert: CriticalDiskUsage
+        expr: disk_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage is {{ $value }}% for more than 2 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/critical-disk"
+
+      - alert: HighLoadAverage
+        expr: load_average_1m > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High load average detected"
+          description: "Load average is {{ $value }} for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-load"
+
+  # Application-level alerts
+  - name: application_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: development
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }}% for more than 2 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-error-rate"
+
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "Slow response time detected"
+          description: "95th percentile response time is {{ $value }}s for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/slow-response"
+
+      - alert: ApplicationDown
+        expr: up{job="pasargad-prints-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Application is down"
+          description: "Pasargad Prints application is not responding"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/app-down"
+
+      - alert: LowRequestRate
+        expr: rate(http_requests_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "Unusually low request rate"
+          description: "Request rate is {{ $value }} requests/sec for more than 10 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/low-traffic"
+
+  # Database alerts
+  - name: database_alerts
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL database is not responding"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/db-down"
+
+      - alert: HighDatabaseConnections
+        expr: (database_connections_active / database_connections_max) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection usage is {{ $value }}% for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-db-connections"
+
+      - alert: SlowQueries
+        expr: slow_queries_per_minute > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "High number of slow queries"
+          description: "{{ $value }} slow queries per minute for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/slow-queries"
+
+      - alert: DatabaseReplicationLag
+        expr: database_replication_lag_seconds > 30
+        for: 2m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Database replication lag detected"
+          description: "Replication lag is {{ $value }} seconds for more than 2 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/replication-lag"
+
+  # Redis alerts
+  - name: redis_alerts
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache server is not responding"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/redis-down"
+
+      - alert: HighRedisMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value }}% for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/high-redis-memory"
+
+      - alert: RedisHighFragmentation
+        expr: redis_memory_fragmentation_ratio > 2.0
+        for: 10m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High Redis memory fragmentation"
+          description: "Redis memory fragmentation ratio is {{ $value }} for more than 10 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/redis-fragmentation"
+
+      - alert: LowRedisCacheHitRate
+        expr: (redis_keyspace_hits / (redis_keyspace_hits + redis_keyspace_misses)) * 100 < 85
+        for: 10m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "Low Redis cache hit rate"
+          description: "Redis cache hit rate is {{ $value }}% for more than 10 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/low-cache-hit-rate"
+
+  # Business/Application specific alerts
+  - name: business_alerts
+    rules:
+      - alert: HighOrderFailureRate
+        expr: (rate(orders_failed_total[5m]) / rate(orders_total[5m])) * 100 > 10
+        for: 5m
+        labels:
+          severity: critical
+          team: development
+        annotations:
+          summary: "High order failure rate"
+          description: "Order failure rate is {{ $value }}% for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/order-failures"
+
+      - alert: HighPaymentFailureRate
+        expr: (rate(payments_failed_total[5m]) / rate(payments_total[5m])) * 100 > 5
+        for: 3m
+        labels:
+          severity: critical
+          team: development
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value }}% for more than 3 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/payment-failures"
+
+      - alert: LowStockAlert
+        expr: product_stock_quantity < 10
+        for: 1m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "Low stock alert"
+          description: "Product {{ $labels.product_name }} has only {{ $value }} items in stock"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/low-stock"
+
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "Celery queue backlog"
+          description: "Celery queue {{ $labels.queue_name }} has {{ $value }} pending tasks"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/celery-backlog"
+
+  # Security alerts
+  - name: security_alerts
+    rules:
+      - alert: MultipleFailedLogins
+        expr: increase(failed_login_attempts_total[5m]) > 20
+        for: 1m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Multiple failed login attempts"
+          description: "{{ $value }} failed login attempts in the last 5 minutes from {{ $labels.ip }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/failed-logins"
+
+      - alert: SuspiciousAPIUsage
+        expr: rate(http_requests_total{job="pasargad-prints-app"}[1m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Suspicious API usage detected"
+          description: "Unusually high API request rate: {{ $value }} requests/sec from {{ $labels.ip }}"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/suspicious-api-usage"
+
+      - alert: UnauthorizedAdminAccess
+        expr: increase(admin_login_attempts_total{success="false"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Unauthorized admin access attempts"
+          description: "{{ $value }} failed admin login attempts in the last 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/unauthorized-admin-access"
+
+  # Infrastructure alerts
+  - name: infrastructure_alerts
+    rules:
+      - alert: SSLCertificateExpiringSoon
+        expr: (ssl_certificate_expiry_timestamp - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.domain }} expires in {{ $value }} days"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/ssl-expiry"
+
+      - alert: BackupFailure
+        expr: increase(backup_failures_total[24h]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Database backup failure"
+          description: "Database backup failed in the last 24 hours"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/backup-failure"
+
+      - alert: HighNetworkErrors
+        expr: rate(network_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High network error rate"
+          description: "Network error rate is {{ $value }} errors/sec for more than 5 minutes"
+          runbook_url: "https://docs.pasargadprints.com/runbooks/network-errors"

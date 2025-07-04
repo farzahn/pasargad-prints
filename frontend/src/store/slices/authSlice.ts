@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { api } from '../../services/apiConfig'
-import type { User, SocialAuthResponse } from '../../types'
+import type { User } from '../../types'
 
 export interface AuthState {
   user: User | null

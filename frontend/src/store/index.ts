@@ -6,8 +6,9 @@ import wishlistReducer from './slices/wishlistSlice'
 import comparisonReducer from './slices/comparisonSlice'
 import bannersReducer from './slices/bannersSlice'
 import adminReducer from './slices/adminSlice'
-import referralReducer from './slices/referralSlice'
-import notificationReducer from './slices/notificationSlice'
+// Removed unused slices:
+// - referralReducer (feature not implemented in UI)
+// - notificationReducer (feature not implemented in UI)
 
 export const store = configureStore({
   reducer: {
@@ -18,8 +19,7 @@ export const store = configureStore({
     comparison: comparisonReducer,
     banners: bannersReducer,
     admin: adminReducer,
-    referral: referralReducer,
-    notification: notificationReducer,
+    // Removed: referral, notification
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

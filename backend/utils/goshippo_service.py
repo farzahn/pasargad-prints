@@ -10,6 +10,7 @@ from datetime import datetime
 from django.conf import settings
 from django.core.cache import cache
 import shippo
+from shippo import security
 
 logger = logging.getLogger(__name__)
 

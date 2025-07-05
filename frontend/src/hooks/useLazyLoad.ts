@@ -31,7 +31,7 @@ export const useLazyLoad = <T extends HTMLElement = HTMLElement>(
   } = options
 
   const [isIntersecting, setIsIntersecting] = useState(false)
-  const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null)
+  const [, setEntry] = useState<IntersectionObserverEntry | null>(null)
   const targetRef = useRef<T>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -81,21 +81,6 @@ export const useLazyLoad = <T extends HTMLElement = HTMLElement>(
     observerRef.current.observe(target)
   }, [threshold, rootMargin, root, handleIntersection])
 
-  const unobserve = useCallback(() => {
-    const target = targetRef.current
-    if (target && observerRef.current) {
-      observerRef.current.unobserve(target)
-    }
-  }, [])
-
-  const reset = useCallback(() => {
-    setIsIntersecting(false)
-    setEntry(null)
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
-    }
-  }, [])
 
   useEffect(() => {
     if (targetRef.current) {

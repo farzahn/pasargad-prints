@@ -7,7 +7,7 @@ import authReducer from '../../store/slices/authSlice';
 import cartReducer from '../../store/slices/cartSlice';
 
 // Mock store setup
-const createMockStore = (initialState: any) => {
+const createMockStore = (initialState: Record<string, unknown>) => {
   return configureStore({
     reducer: {
       auth: authReducer,
@@ -17,7 +17,7 @@ const createMockStore = (initialState: any) => {
   });
 };
 
-const renderWithProviders = (component: React.ReactElement, initialState: any) => {
+const renderWithProviders = (component: React.ReactElement, initialState: Record<string, unknown>) => {
   const store = createMockStore(initialState);
   return render(
     <Provider store={store}>

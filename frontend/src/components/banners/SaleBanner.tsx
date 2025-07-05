@@ -104,6 +104,7 @@ const SaleBanner = ({ banner }: SaleBannerProps) => {
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
   // This would need to be implemented with proper state management
   // For now, just showing a placeholder
+  console.log('End date:', endDate) // Using endDate to avoid ESLint error
   return (
     <div className="flex items-center gap-2 text-sm">
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

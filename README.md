@@ -38,6 +38,18 @@ EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=noreply@pasargadprints.com
 
+# Goshippo Shipping Configuration
+GOSHIPPO_API_KEY=shippo_test_a273c78ecb97dae87d34dbec6c37cef303c80d15
+GOSHIPPO_TEST_MODE=True
+BUSINESS_NAME=Pasargad Prints
+BUSINESS_ADDRESS=123 Main Street
+BUSINESS_CITY=New York
+BUSINESS_STATE=NY
+BUSINESS_ZIP=10001
+BUSINESS_COUNTRY=US
+BUSINESS_PHONE=+1-555-123-4567
+BUSINESS_EMAIL=shipping@pasargadprints.com
+
 # Redis and Cache (Optional)
 USE_REDIS_CACHE=False
 REDIS_URL=redis://127.0.0.1:6379/1
@@ -54,6 +66,7 @@ VITE_ENABLE_PRODUCT_COMPARISON=true
 
 **Required Configuration:**
 - Get Stripe test keys from https://stripe.com/docs/keys
+- Get Goshippo API key from https://apps.goshippo.com/settings/api or use test key provided
 - Use Gmail App Password for email (not your regular password)
 - Generate a secure SECRET_KEY for production
 - The `.env` file is the main configuration file and should NOT be ignored in git (it contains development defaults)
@@ -81,6 +94,7 @@ VITE_ENABLE_PRODUCT_COMPARISON=true
 - **JWT Authentication**: Secure token-based authentication with refresh tokens
 - **Shopping Cart Persistence**: Session-based for guests, user-based for members
 - **Order Management**: Complete order lifecycle tracking with email notifications
+- **Shipping Integration**: Goshippo API for shipping rates, labels, and tracking
 - **Email Integration**: Gmail SMTP for notifications with HTML templates
 - **Image Management**: Automatic image resizing and optimization
 - **Promotions System**: Discount codes and promotional campaigns
@@ -109,6 +123,7 @@ VITE_ENABLE_PRODUCT_COMPARISON=true
 - **Redis 5.0.1** - Caching and session storage
 - **Celery 5.3.4** - Asynchronous task queue
 - **Stripe API 9.12.0** - Payment processing
+- **Goshippo 4.9.0** - Shipping API integration
 - **Pillow 10.1.0** - Image processing
 - **psycopg2-binary 2.9.9** - PostgreSQL adapter
 - **Gunicorn 21.2.0** - WSGI server
@@ -352,6 +367,18 @@ The application uses a comprehensive `.env` file that serves both backend and fr
 - `EMAIL_HOST_PASSWORD` - SMTP password or app password
 - `DEFAULT_FROM_EMAIL` - Default sender email
 
+### Shipping Configuration (Goshippo)
+- `GOSHIPPO_API_KEY` - Goshippo API key (test: shippo_test_a273c78ecb97dae87d34dbec6c37cef303c80d15)
+- `GOSHIPPO_TEST_MODE` - Enable test mode (True/False)
+- `BUSINESS_NAME` - Your business name for shipping labels
+- `BUSINESS_ADDRESS` - Your business address
+- `BUSINESS_CITY` - Your business city
+- `BUSINESS_STATE` - Your business state
+- `BUSINESS_ZIP` - Your business ZIP code
+- `BUSINESS_COUNTRY` - Your business country (default: US)
+- `BUSINESS_PHONE` - Your business phone
+- `BUSINESS_EMAIL` - Your business email
+
 ### Optional Services
 - `USE_REDIS_CACHE` - Enable Redis caching (True/False)
 - `REDIS_URL` - Redis connection URL
@@ -470,4 +497,4 @@ This project is licensed under the MIT License.
 
 ## 💬 Support
 
-For support, email support@pasargadprints.com or create an issue in the repository.
+For support, email support@pasargadprints.com or create an issue in the repository.# CI/CD Test - Fourth Iteration

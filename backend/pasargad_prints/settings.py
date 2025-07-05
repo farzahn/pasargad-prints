@@ -24,16 +24,92 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-g#8_3y58dah+oz3y+z%d^qphxyrp02btabxwg=f#v_g25scf-n')
+SECRET_KEY = config('SECRET_KEY', default=None)
+
+# Validate SECRET_KEY is properly configured
+if not SECRET_KEY:
+    if DEBUG:
+        # Development fallback
+        SECRET_KEY = 'django-insecure-development-key-' + os.urandom(32).hex()[:32]
+        import warnings
+        warnings.warn(
+            "Using auto-generated SECRET_KEY for development. "
+            "Set SECRET_KEY environment variable for production.",
+            UserWarning
+        )
+    else:
+        raise ValueError(
+            "SECRET_KEY environment variable is required in production. "
+            "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(64))'"
+        )
+
+# Validate SECRET_KEY is not using the default insecure key
+if 'django-insecure-g#8_3y58dah+oz3y+z%d^qphxyrp02btabxwg=f#v_g25scf-n' in SECRET_KEY:
+    raise ValueError(
+        "Default insecure SECRET_KEY detected. "
+        "Generate a new secure key: python -c 'import secrets; print(secrets.token_urlsafe(64))'"
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Production Environment Variable Validation
+if not DEBUG:
+    # Critical production environment variables
+    REQUIRED_PROD_VARS = [
+        'SECRET_KEY',
+        'DB_NAME',
+        'DB_USER', 
+        'DB_PASSWORD',
+        'DB_HOST',
+        'ALLOWED_HOSTS',
+        'EMAIL_HOST_USER',
+        'EMAIL_HOST_PASSWORD',
+        'STRIPE_SECRET_KEY',
+        'STRIPE_WEBHOOK_SECRET',
+    ]
+    
+    # Recommended production environment variables
+    RECOMMENDED_PROD_VARS = [
+        'GOSHIPPO_API_KEY',
+        'GOSHIPPO_WEBHOOK_SECRET',
+        'REDIS_URL',
+        'AWS_ACCESS_KEY_ID',
+        'AWS_SECRET_ACCESS_KEY',
+        'CELERY_BROKER_URL',
+        'FRONTEND_URL',
+    ]
+    
+    missing_required = []
+    missing_recommended = []
+    
+    for var in REQUIRED_PROD_VARS:
+        if not config(var, default=None):
+            missing_required.append(var)
+    
+    for var in RECOMMENDED_PROD_VARS:
+        if not config(var, default=None):
+            missing_recommended.append(var)
+    
+    if missing_required:
+        raise ValueError(
+            f"Missing required production environment variables: {', '.join(missing_required)}. "
+            "These must be set for production deployment."
+        )
+    
+    if missing_recommended:
+        import warnings
+        warnings.warn(
+            f"Missing recommended production environment variables: {', '.join(missing_recommended)}. "
+            "Some features may not work correctly.",
+            UserWarning
+        )
 
 # ALLOWED_HOSTS - Restrictive for production
 if DEBUG:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.100.100.118', '.ngrok-free.app', '.ngrok.io', 'backend']
 else:
-    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='pasargadprints.com,www.pasargadprints.com').split(',')
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='pasargadprints.com,www.pasargadprints.com,backend').split(',')
 
 
 # Application definition
@@ -49,6 +125,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',  # For JWT token blacklisting
+    'drf_spectacular',  # API documentation
     'corsheaders',
     'django.contrib.postgres',  # For full-text search
     # Third-party apps
@@ -68,6 +145,7 @@ INSTALLED_APPS = [
     'recommendations',  # Keep for now - has implemented functionality
     'promotions',  # Keep for now - referenced by Order model
     'analytics',  # Keep for now - has middleware dependencies
+    # 'shipping',  # Goshippo shipping integration - temporarily disabled
     'utils.apps.UtilsConfig',
 ]
 
@@ -85,6 +163,9 @@ MIDDLEWARE = [
     # Custom middleware - consolidated
     'utils.middleware.RequestLoggingMiddleware',  # Includes performance monitoring
     'utils.middleware.CacheMiddleware',  # API caching
+    # 'utils.goshippo_middleware.GoshippoAuthenticationMiddleware',  # Goshippo authentication - disabled
+    # 'utils.goshippo_middleware.GoshippoRequestProcessingMiddleware',  # Goshippo request processing - disabled
+    # 'utils.goshippo_middleware.GoshippoResponseProcessingMiddleware',  # Goshippo response processing - disabled
     # Removed redundant middleware:
     # - SecurityHeadersMiddleware (Django's SecurityMiddleware handles this)
     # - PerformanceMonitoringMiddleware (consolidated into RequestLoggingMiddleware)
@@ -115,43 +196,76 @@ WSGI_APPLICATION = 'pasargad_prints.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Try PostgreSQL first, fallback to SQLite for development
+# PRODUCTION SECURITY: PostgreSQL ONLY - No SQLite fallback
+# Validate required database environment variables
+DB_NAME = config('DB_NAME', default=None)
+DB_USER = config('DB_USER', default=None)
+DB_PASSWORD = config('DB_PASSWORD', default=None)
+DB_HOST = config('DB_HOST', default=None)
+DB_PORT = config('DB_PORT', default='5432')
+
+# Enforce required database configuration in production
+if not DEBUG:
+    if not all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
+        raise ValueError(
+            "Production database configuration incomplete. "
+            "Required environment variables: DB_NAME, DB_USER, DB_PASSWORD, DB_HOST"
+        )
+
+# Allow local development flexibility but prefer PostgreSQL
+if DEBUG and not DB_NAME:
+    # Development fallback to PostgreSQL with defaults
+    DB_NAME = 'pasargad_prints'
+    DB_USER = 'postgres'
+    DB_PASSWORD = 'postgres'
+    DB_HOST = 'localhost'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
+        'CONN_MAX_AGE': 0 if DEBUG else 60,  # Connection pooling in production
+    }
+}
+
+DATABASE_TYPE = 'postgresql'
+
+# Validate database connection on startup
 try:
     import psycopg2
-    # Test PostgreSQL connection
+    # Test database connection with actual configured values
     conn = psycopg2.connect(
-        host=config('DB_HOST', default='localhost'),
-        database=config('DB_NAME', default='pasargad_prints'),
-        user=config('DB_USER', default='postgres'),
-        password=config('DB_PASSWORD', default='postgres'),
-        port=config('DB_PORT', default='5432')
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        port=DB_PORT,
+        connect_timeout=10
     )
     conn.close()
-    
-    # PostgreSQL is available
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='pasargad_prints'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-        }
-    }
-    
-    DATABASE_TYPE = 'postgresql'
-    
-except (ImportError, psycopg2.OperationalError):
-    # PostgreSQL not available, use SQLite for development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-    
-    DATABASE_TYPE = 'sqlite'
+except ImportError:
+    raise ImportError(
+        "PostgreSQL adapter (psycopg2) not installed. "
+        "Install with: pip install psycopg2-binary"
+    )
+except psycopg2.OperationalError as e:
+    if not DEBUG:
+        raise ConnectionError(f"Production database connection failed: {e}")
+    else:
+        # In development, show warning but allow startup
+        import warnings
+        warnings.warn(
+            f"Database connection failed: {e}. "
+            "Ensure PostgreSQL is running with correct credentials.",
+            UserWarning
+        )
 
 
 # Password validation
@@ -238,6 +352,7 @@ REST_FRAMEWORK = {
         'burst': '100/minute',   # Increased for development
         'sustained': '10000/day', # Increased for development
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Removed duplicate REST_FRAMEWORK configuration
@@ -259,6 +374,75 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
     'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+}
+
+# DRF Spectacular (API Documentation) Configuration
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Pasargad Prints API',
+    'DESCRIPTION': 'API documentation for Pasargad Prints e-commerce platform',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayRequestDuration': True,
+        'filter': True,
+        'tryItOutEnabled': True,
+    },
+    'REDOC_UI_SETTINGS': {
+        'hideDownloadButton': False,
+        'hideHostname': False,
+        'lazyRendering': True,
+        'nativeScrollbars': True,
+        'pathInMiddlePanel': True,
+        'requiredPropsFirst': True,
+        'scrollYOffset': 0,
+        'sortPropsAlphabetically': True,
+        'theme': {
+            'colors': {
+                'primary': {
+                    'main': '#2563eb'
+                }
+            }
+        }
+    },
+    'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+    'ENUM_NAME_OVERRIDES': {
+        'OrderStatusEnum': 'orders.models.Order.status.field.choices',
+        'PaymentStatusEnum': 'payments.models.Payment.status.field.choices',
+    },
+    'SECURITY': [
+        {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT'
+        }
+    ],
+    'SERVERS': [
+        {
+            'url': config('API_BASE_URL', default='http://localhost:8000/api/'),
+            'description': 'Development server'
+        },
+    ] if DEBUG else [
+        {
+            'url': config('API_BASE_URL', default='https://api.pasargadprints.com/api/'),
+            'description': 'Production server'
+        },
+    ],
+    'TAGS': [
+        {'name': 'authentication', 'description': 'User authentication and authorization'},
+        {'name': 'users', 'description': 'User management'},
+        {'name': 'products', 'description': 'Product catalog and management'},
+        {'name': 'orders', 'description': 'Order processing and management'},
+        {'name': 'cart', 'description': 'Shopping cart operations'},
+        {'name': 'payments', 'description': 'Payment processing'},
+        {'name': 'shipping', 'description': 'Shipping and logistics'},
+        {'name': 'wishlist', 'description': 'User wishlist management'},
+        {'name': 'analytics', 'description': 'Analytics and reporting'},
+        {'name': 'admin', 'description': 'Administrative operations'},
+    ],
 }
 
 # CORS settings - More restrictive for production
@@ -308,6 +492,37 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@pasargadprint
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Goshippo settings - Shipping API
+GOSHIPPO_API_KEY = config('GOSHIPPO_API_KEY', default='shippo_test_a273c78ecb97dae87d34dbec6c37cef303c80d15')
+GOSHIPPO_DEBUG = config('GOSHIPPO_DEBUG', default=DEBUG, cast=bool)
+GOSHIPPO_WEBHOOK_SECRET = config('GOSHIPPO_WEBHOOK_SECRET', default='')
+
+# Default shipping origin address
+SHIPPING_ORIGIN = {
+    'name': config('SHIPPING_ORIGIN_NAME', default='Pasargad Prints'),
+    'company': config('SHIPPING_ORIGIN_COMPANY', default='Pasargad Prints'),
+    'street1': config('SHIPPING_ORIGIN_STREET1', default=''),
+    'street2': config('SHIPPING_ORIGIN_STREET2', default=''),
+    'city': config('SHIPPING_ORIGIN_CITY', default=''),
+    'state': config('SHIPPING_ORIGIN_STATE', default=''),
+    'zip': config('SHIPPING_ORIGIN_ZIP', default=''),
+    'country': config('SHIPPING_ORIGIN_COUNTRY', default='US'),
+    'phone': config('SHIPPING_ORIGIN_PHONE', default=''),
+    'email': config('SHIPPING_ORIGIN_EMAIL', default=''),
+}
+
+
+# Business address settings for shipping
+BUSINESS_NAME = config('BUSINESS_NAME', default='Pasargad Prints')
+BUSINESS_ADDRESS = config('BUSINESS_ADDRESS', default='')
+BUSINESS_CITY = config('BUSINESS_CITY', default='')
+BUSINESS_STATE = config('BUSINESS_STATE', default='')
+BUSINESS_ZIP = config('BUSINESS_ZIP', default='')
+BUSINESS_COUNTRY = config('BUSINESS_COUNTRY', default='US')
+BUSINESS_PHONE = config('BUSINESS_PHONE', default='')
+BUSINESS_EMAIL = config('BUSINESS_EMAIL', default='')
+
 
 # Frontend URL for emails and links
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -424,6 +639,16 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'utils.goshippo_service': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'utils.goshippo_middleware': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -535,7 +760,45 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'cart.tasks.process_abandoned_carts',
         'schedule': 86400.0,  # Every day
     },
+    # Goshippo shipping tasks
+    'track-goshippo-shipments': {
+        'task': 'orders.tasks.track_goshippo_shipments',
+        'schedule': 3600.0,  # Every hour
+    },
+    'sync-goshippo-rates': {
+        'task': 'orders.tasks.sync_goshippo_rates',
+        'schedule': 1800.0,  # Every 30 minutes
+    },
+    'cleanup-old-goshippo-shipments': {
+        'task': 'orders.tasks.cleanup_old_goshippo_shipments',
+        'schedule': 86400.0,  # Every day
+    },
+    'send-shipping-rate-notifications': {
+        'task': 'orders.tasks.send_shipping_rate_notifications',
+        'schedule': 7200.0,  # Every 2 hours
+    },
+    'validate-goshippo-addresses': {
+        'task': 'orders.tasks.validate_goshippo_addresses',
+        'schedule': 3600.0,  # Every hour
+    },
 }
+
+# Goshippo Configuration
+GOSHIPPO_API_KEY = config('GOSHIPPO_API_KEY', default='')
+GOSHIPPO_FROM_NAME = config('GOSHIPPO_FROM_NAME', default='Pasargad Prints')
+GOSHIPPO_FROM_ADDRESS = config('GOSHIPPO_FROM_ADDRESS', default='')
+GOSHIPPO_FROM_CITY = config('GOSHIPPO_FROM_CITY', default='')
+GOSHIPPO_FROM_STATE = config('GOSHIPPO_FROM_STATE', default='')
+GOSHIPPO_FROM_ZIP = config('GOSHIPPO_FROM_ZIP', default='')
+GOSHIPPO_FROM_COUNTRY = config('GOSHIPPO_FROM_COUNTRY', default='US')
+GOSHIPPO_FROM_PHONE = config('GOSHIPPO_FROM_PHONE', default='')
+GOSHIPPO_FROM_EMAIL = config('GOSHIPPO_FROM_EMAIL', default=DEFAULT_FROM_EMAIL)
+GOSHIPPO_SIGNATURE_REQUIRED = config('GOSHIPPO_SIGNATURE_REQUIRED', default=False, cast=bool)
+
+# Default package dimensions (in inches)
+DEFAULT_PACKAGE_LENGTH = config('DEFAULT_PACKAGE_LENGTH', default=12, cast=int)
+DEFAULT_PACKAGE_WIDTH = config('DEFAULT_PACKAGE_WIDTH', default=12, cast=int)
+DEFAULT_PACKAGE_HEIGHT = config('DEFAULT_PACKAGE_HEIGHT', default=6, cast=int)
 
 # CDN Configuration
 USE_CDN = config('USE_CDN', default=False, cast=bool)

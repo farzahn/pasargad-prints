@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 @api_view(['GET'])
 def api_root(request):
@@ -34,8 +35,14 @@ def api_root(request):
             'orders': '/api/orders/',
             'payments': '/api/payments/',
             'wishlist': '/api/wishlist/',
+            'shipping': '/api/shipping/',
             'admin': '/admin/',
             'health': '/health/',
+        },
+        'documentation': {
+            'swagger': '/api/docs/',
+            'redoc': '/api/redoc/',
+            'schema': '/api/schema/',
         }
     })
 
@@ -45,6 +52,11 @@ urlpatterns = [
     # API root
     path('api/', api_root, name='api-root'),
     
+    # API documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    
     # API endpoints
     path('api/users/', include('users.urls')),
     path('api/products/', include('products.urls')),
@@ -52,9 +64,13 @@ urlpatterns = [
     path('api/orders/', include('orders.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/wishlist/', include('wishlist.urls')),
+    # path('api/shipping/', include('shipping.urls')),  # Temporarily disabled
     # Removed recommendations URLs - feature not implemented in frontend
     # Removed promotions URLs - discount codes not implemented in frontend
     # Removed analytics URLs - frontend uses Google Analytics instead
+    
+    # Admin API endpoints
+    path('api/admin/products/', include('products.admin_urls')),
     
     # Utility endpoints
     path('', include('utils.urls')),

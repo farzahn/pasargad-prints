@@ -28,8 +28,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'phone', 'date_of_birth', 'newsletter_subscription', 'created_at')
-        read_only_fields = ('id', 'email', 'created_at')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'phone', 'date_of_birth', 'newsletter_subscription', 'created_at', 'is_staff', 'is_superuser')
+        read_only_fields = ('id', 'email', 'created_at', 'is_staff', 'is_superuser')
 
 
 class PasswordChangeSerializer(serializers.Serializer):

@@ -21,6 +21,10 @@ app.conf.task_routes = {
     'utils.tasks.*': {'queue': 'default'},
     'cart.tasks.*': {'queue': 'cart'},
     'payments.tasks.*': {'queue': 'payments'},
+    # Goshippo shipping tasks use dedicated queue for priority
+    'orders.tasks.track_goshippo_shipments': {'queue': 'shipping'},
+    'orders.tasks.purchase_goshippo_label': {'queue': 'shipping'},
+    'orders.tasks.create_goshippo_shipment': {'queue': 'shipping'},
 }
 
 # Task time limits

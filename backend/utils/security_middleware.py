@@ -460,7 +460,7 @@ class SecurityHeaders:
             'X-Frame-Options': 'DENY',
             'X-XSS-Protection': '1; mode=block',
             'Referrer-Policy': 'strict-origin-when-cross-origin',
-            'Content-Security-Policy': self.get_csp_header(),
+            # 'Content-Security-Policy': self.get_csp_header(),  # Handled by nginx
             'Permissions-Policy': self.get_permissions_policy(),
             'X-Permitted-Cross-Domain-Policies': 'none',
             'Cross-Origin-Embedder-Policy': 'require-corp',
@@ -497,7 +497,7 @@ class SecurityHeaders:
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https:",
             "font-src 'self'",
-            "connect-src 'self' https://api.stripe.com",
+            "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://region1.analytics.google.com https://www.googletagmanager.com https://api.goshippo.com https://static.hotjar.com https://script.hotjar.com https://vars.hotjar.com https://connect.facebook.net https://snap.licdn.com",
             "frame-src https://js.stripe.com",
             "object-src 'none'",
             "base-uri 'self'",

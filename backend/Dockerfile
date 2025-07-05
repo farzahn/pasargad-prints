@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Copy .env file from root directory for environment variables
+# Copy .env file from project root directory for environment variables
 COPY ../.env .env
 
 # Create media and static directories

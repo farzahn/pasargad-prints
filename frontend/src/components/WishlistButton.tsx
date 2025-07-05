@@ -38,7 +38,7 @@ const WishlistButton = ({ product, size = 'md', showText = false, className = ''
       } else {
         await dispatch(addToWishlist({ product_id: product.id })).unwrap()
       }
-    } catch (error) {
+    } catch {
       // Revert local state on error
       setLocalIsInWishlist(isInWishlist)
     } finally {

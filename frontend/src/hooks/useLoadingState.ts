@@ -48,11 +48,11 @@ export const useLoadingState = (initialLoading = false): LoadingState => {
         stopLoading();
       }
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (mountedRef.current) {
-        const errorMessage = err.response?.data?.error || 
-                           err.response?.data?.message || 
-                           err.message || 
+        const errorMessage = (err as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.error || 
+                           (err as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.message || 
+                           (err as { message?: string })?.message || 
                            'An unexpected error occurred';
         setError(errorMessage);
         stopLoading();

@@ -8,7 +8,6 @@ const CartPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { cart, isLoading } = useSelector((state: RootState) => state.cart)
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
 
   const handleQuantityChange = (itemId: number, quantity: number) => {
     if (quantity === 0) {

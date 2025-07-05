@@ -5,7 +5,6 @@ import { fetchProductDetail } from '../store/slices/productsSlice'
 import { addToCart } from '../store/slices/cartSlice'
 import WishlistButton from './WishlistButton'
 import LoadingSpinner from './LoadingSpinner'
-import type { Product } from '../types'
 
 interface ProductQuickViewProps {
   productId: number

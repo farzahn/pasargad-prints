@@ -242,7 +242,6 @@ class OrderStatusUpdateView(generics.UpdateAPIView):
         
         # Trigger additional actions based on status
         from utils.email import email_service
-        from utils.goshippo_service import goshippo_service
         
         if order.status == 'processing':
             # When order is processing, get shipping rates from Goshippo
@@ -352,8 +351,7 @@ class OrderShippingRatesView(generics.GenericAPIView):
         """Get shipping rates for the order."""
         try:
             order = self.get_object()
-            from utils.goshippo_service import goshippo_service
-            
+                
             rates = goshippo_service.get_shipping_rates(order)
             
             return Response({
@@ -396,8 +394,7 @@ class OrderCreateShipmentView(generics.GenericAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            from utils.goshippo_service import goshippo_service
-            
+                
             result = goshippo_service.process_order_shipment(order, rate_object_id)
             
             if result['success']:
@@ -455,8 +452,7 @@ class OrderTrackingUpdateView(generics.GenericAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            from utils.goshippo_service import goshippo_service
-            
+                
             transaction_status = goshippo_service.get_transaction_status(order.goshippo_transaction_id)
             
             if transaction_status:

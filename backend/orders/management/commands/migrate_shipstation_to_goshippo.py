@@ -1,6 +1,9 @@
 """
 Django management command to migrate existing ShipStation data to Goshippo format.
 This command helps transition from ShipStation to Goshippo by migrating order data.
+
+Goshippo SDK Documentation: https://github.com/goshippo/shippo-python-sdk
+API Reference: https://docs.goshippo.com/docs/api
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction

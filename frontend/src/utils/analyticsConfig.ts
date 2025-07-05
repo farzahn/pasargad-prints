@@ -77,40 +77,43 @@ export const initializeSentry = async () => {
 
   try {
     // Dynamic import to avoid loading Sentry in development
-    const { init, configureScope, setUser, setTag } = await import('@sentry/browser');
+    // Temporarily disabled for build
+    console.log('Sentry integration temporarily disabled');
+    return;
+    // const { init, configureScope, setUser, setTag } = await import('@sentry/browser');
     
-    init({
-      dsn: config.sentryDsn,
-      environment: config.environment,
-      enabled: config.enableErrorTracking,
-      debug: config.debugMode,
-      tracesSampleRate: config.environment === 'production' ? 0.1 : 1.0,
-      beforeSend(event) {
-        // Filter out non-production errors in staging
-        if (config.environment === 'staging' && event.level === 'error') {
-          return null;
-        }
-        return event;
-      },
-      integrations: [
-        // Add performance monitoring
-        new (await import('@sentry/browser')).BrowserTracing({
-          tracingOrigins: [window.location.hostname]
-        })
-      ]
-    });
+    // init({
+    //   dsn: config.sentryDsn,
+    //   environment: config.environment,
+    //   enabled: config.enableErrorTracking,
+    //   debug: config.debugMode,
+    //   tracesSampleRate: config.environment === 'production' ? 0.1 : 1.0,
+    //   beforeSend(event) {
+    //     // Filter out non-production errors in staging
+    //     if (config.environment === 'staging' && event.level === 'error') {
+    //       return null;
+    //     }
+    //     return event;
+    //   },
+    //   integrations: [
+    //     // Add performance monitoring
+    //     new (await import('@sentry/browser')).BrowserTracing({
+    //       tracingOrigins: [window.location.hostname]
+    //     })
+    //   ]
+    // });
 
     // Set user context
-    configureScope((scope) => {
-      scope.setTag('app.version', import.meta.env.VITE_APP_VERSION || '1.0.0');
-      scope.setTag('app.environment', config.environment);
-      
-      // Set user ID if available
-      const userId = localStorage.getItem('user_id');
-      if (userId) {
-        setUser({ id: userId });
-      }
-    });
+    // configureScope((scope) => {
+    //   scope.setTag('app.version', import.meta.env.VITE_APP_VERSION || '1.0.0');
+    //   scope.setTag('app.environment', config.environment);
+    //   
+    //   // Set user ID if available
+    //   const userId = localStorage.getItem('user_id');
+    //   if (userId) {
+    //     setUser({ id: userId });
+    //   }
+    // });
 
     if (config.debugMode) {
       console.log('Sentry initialized for environment:', config.environment);

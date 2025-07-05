@@ -18,6 +18,16 @@ interface OrderTrackingData {
   shipped_at?: string;
   delivered_at?: string;
   items: OrderItem[];
+  goshippo_tracking?: {
+    tracking_status?: string;
+    eta?: string;
+    tracking_history?: Array<{
+      status: string;
+      status_details: string;
+      status_date: string;
+      location: string;
+    }>;
+  };
 }
 
 const OrderTrackingPage = () => {
@@ -364,7 +374,7 @@ const OrderTrackingPage = () => {
           </div>
 
           {/* Order Items */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-6 border-b">
             <h3 className="text-lg font-semibold mb-4">Order Items</h3>
             <ul className="space-y-4">
               {order.items.map((item, index) => (
@@ -377,6 +387,61 @@ const OrderTrackingPage = () => {
               ))}
             </ul>
           </div>
+
+          {/* Goshippo Tracking History */}
+          {order.goshippo_tracking && order.goshippo_tracking.tracking_history && order.goshippo_tracking.tracking_history.length > 0 && (
+            <div className="px-6 py-6 border-b">
+              <h3 className="text-lg font-semibold mb-4">Detailed Tracking History</h3>
+              <div className="space-y-4">
+                {order.goshippo_tracking.tracking_history.map((event, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{event.status}</p>
+                          <p className="text-sm text-gray-600">{event.status_details}</p>
+                          {event.location && (
+                            <p className="text-xs text-gray-500 mt-1">{event.location}</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 whitespace-nowrap ml-4">
+                          {new Date(event.status_date).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Tracking Info */}
+          {order.goshippo_tracking && (
+            <div className="px-6 py-6 border-b">
+              <h3 className="text-lg font-semibold mb-4">Live Tracking Status</h3>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {order.goshippo_tracking.tracking_status && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Current Status</p>
+                      <p className="mt-1 text-lg font-medium text-blue-900">{order.goshippo_tracking.tracking_status}</p>
+                    </div>
+                  )}
+                  {order.goshippo_tracking.eta && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Estimated Delivery (Updated)</p>
+                      <p className="mt-1 text-lg font-medium text-blue-900">
+                        {new Date(order.goshippo_tracking.eta).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Help Section */}
           <div className="bg-gray-50 px-6 py-4">

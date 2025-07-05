@@ -72,6 +72,7 @@ export const getSecurityConfig = (): SecurityConfig => {
           'https://www.google-analytics.com',
           'https://analytics.google.com',
           'https://api.stripe.com',
+          'https://api.goshippo.com',
           ...(cdnUrl ? [cdnUrl] : []),
           ...(staticUrl ? [staticUrl] : []),
           ...(isDevelopment ? ['ws:', 'wss:'] : []) // WebSocket for HMR

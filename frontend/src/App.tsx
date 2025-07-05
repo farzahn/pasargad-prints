@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { HelmetProvider } from 'react-helmet-async'
@@ -9,6 +9,7 @@ import GlobalLoadingOverlay, { useGlobalLoading } from './components/GlobalLoadi
 import LoadingSpinner from './components/LoadingSpinner'
 import PerformanceMonitor from './components/PerformanceMonitor'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import { initializeAnalyticsSystem } from './utils/analyticsConfig'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -50,6 +51,11 @@ function App() {
 
 function AppContent() {
   const { isLoading, message } = useGlobalLoading();
+  
+  // Initialize analytics on app start
+  useEffect(() => {
+    initializeAnalyticsSystem();
+  }, []);
   
   return (
     <>

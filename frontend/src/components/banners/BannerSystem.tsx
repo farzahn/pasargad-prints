@@ -14,12 +14,14 @@ interface BannerSystemProps {
 
 const BannerSystem = ({ position, className = '' }: BannerSystemProps) => {
   const dispatch = useDispatch<AppDispatch>()
-  const banners = useSelector((state: RootState) => selectBannersByPosition(state, position))
+  const bannersByPosition = useSelector(selectBannersByPosition)
   const loading = useSelector((state: RootState) => state.banners.loading)
 
   useEffect(() => {
     dispatch(fetchBanners())
   }, [dispatch])
+
+  const banners = bannersByPosition[position] || []
 
   if (loading || banners.length === 0) {
     return null

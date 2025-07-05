@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import type { PayloadAction } from '@reduxjs/toolkit'
 import { adminApi } from '../../services/adminApi'
 import type { 
   DashboardStats, 
@@ -9,7 +10,8 @@ import type {
   CategoryStats,
   ProductStats,
   UserActivity,
-  ReportFilters 
+  ReportFilters,
+  Category
 } from '../../types'
 
 interface AdminState {
@@ -41,6 +43,9 @@ interface AdminState {
   selectedUser: User | null
   usersCount: number
   
+  // Categories
+  categories: Category[]
+  
   // UI State
   isLoading: boolean
   error: string | null
@@ -63,6 +68,7 @@ const initialState: AdminState = {
   users: [],
   selectedUser: null,
   usersCount: 0,
+  categories: [],
   isLoading: false,
   error: null,
   filters: {
@@ -165,6 +171,42 @@ export const updateProductStock = createAsyncThunk(
   }
 )
 
+export const createProduct = createAsyncThunk(
+  'admin/createProduct',
+  async (productData: FormData) => {
+    return await adminApi.createProduct(productData)
+  }
+)
+
+export const updateProduct = createAsyncThunk(
+  'admin/updateProduct',
+  async ({ id, productData }: { id: number; productData: FormData }) => {
+    return await adminApi.updateProduct(id, productData)
+  }
+)
+
+export const deleteProduct = createAsyncThunk(
+  'admin/deleteProduct',
+  async (id: number) => {
+    await adminApi.deleteProduct(id)
+    return id
+  }
+)
+
+export const fetchCategories = createAsyncThunk(
+  'admin/fetchCategories',
+  async () => {
+    return await adminApi.getCategories()
+  }
+)
+
+export const createCategory = createAsyncThunk(
+  'admin/createCategory',
+  async (categoryData: { name: string; description?: string; is_active?: boolean }) => {
+    return await adminApi.createCategory(categoryData)
+  }
+)
+
 // Users Thunks
 export const fetchUsers = createAsyncThunk(
   'admin/fetchUsers',
@@ -197,7 +239,13 @@ export const generateReport = createAsyncThunk(
     link.download = `${type}-report-${new Date().toISOString().split('T')[0]}.${format}`
     document.body.appendChild(link)
     link.click()
-    document.body.removeChild(link)
+    try {
+      if (document.body.contains(link)) {
+        link.remove()
+      }
+    } catch (error) {
+      console.debug('Download link cleanup error:', error)
+    }
     window.URL.revokeObjectURL(url)
     
     return { success: true }
@@ -208,7 +256,7 @@ const adminSlice = createSlice({
   name: 'admin',
   initialState,
   reducers: {
-    setFilters: (state, action) => {
+    setFilters: (state, action: PayloadAction<Partial<ReportFilters>>) => {
       state.filters = { ...state.filters, ...action.payload }
     },
     clearError: (state) => {
@@ -322,6 +370,68 @@ const adminSlice = createSlice({
       .addCase(fetchAdminProducts.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.error.message || 'Failed to fetch products'
+      })
+      
+      // Create Product
+      .addCase(createProduct.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(createProduct.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.products.unshift(action.payload)
+        state.productsCount += 1
+      })
+      .addCase(createProduct.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.error.message || 'Failed to create product'
+      })
+      
+      // Update Product
+      .addCase(updateProduct.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(updateProduct.fulfilled, (state, action) => {
+        state.isLoading = false
+        const index = state.products.findIndex(product => product.id === action.payload.id)
+        if (index !== -1) {
+          state.products[index] = action.payload
+        }
+        if (state.selectedProduct?.id === action.payload.id) {
+          state.selectedProduct = action.payload
+        }
+      })
+      .addCase(updateProduct.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.error.message || 'Failed to update product'
+      })
+      
+      // Delete Product
+      .addCase(deleteProduct.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(deleteProduct.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.products = state.products.filter(product => product.id !== action.payload)
+        state.productsCount -= 1
+        if (state.selectedProduct?.id === action.payload) {
+          state.selectedProduct = null
+        }
+      })
+      .addCase(deleteProduct.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.error.message || 'Failed to delete product'
+      })
+      
+      // Categories
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categories = action.payload
+      })
+      
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.categories.push(action.payload)
       })
       
       // Users

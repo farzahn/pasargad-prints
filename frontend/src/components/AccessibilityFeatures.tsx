@@ -1,6 +1,6 @@
 // Accessibility Features Component
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAccessibility } from '../utils/accessibility';
 
 // Skip Link Component
@@ -110,7 +110,7 @@ export const AccessibleButton = ({
   ariaLabel?: string;
   ariaDescribedBy?: string;
   className?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }) => {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
   
@@ -250,7 +250,7 @@ export const AccessibleFormField = ({
   required?: boolean;
   className?: string;
 }) => {
-  const fieldId = children.props.id || `field-${Date.now()}`;
+  const fieldId = (children.props as Record<string, unknown>).id || `field-${Date.now()}`;
   const errorId = error ? `${fieldId}-error` : undefined;
   const helpId = help ? `${fieldId}-help` : undefined;
   const describedBy = [errorId, helpId].filter(Boolean).join(' ');
@@ -274,7 +274,7 @@ export const AccessibleFormField = ({
         'aria-describedby': describedBy || undefined,
         'aria-invalid': error ? 'true' : undefined,
         'aria-required': required ? 'true' : undefined
-      })}
+      } as Record<string, unknown>)}
       
       {help && (
         <p id={helpId} className="text-sm text-gray-500">
@@ -305,7 +305,7 @@ export const AccessibleTabs = ({
 }) => {
   const tabListRef = useRef<HTMLDivElement>(null);
 
-  const handleKeyDown = (e: React.KeyboardEvent, tabId: string, index: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, _tabId: string, index: number) => {
     let nextIndex = index;
 
     switch (e.key) {
@@ -451,7 +451,7 @@ export const AccessibleTooltip = ({
         onMouseLeave: () => setIsVisible(false),
         onFocus: () => setIsVisible(true),
         onBlur: () => setIsVisible(false)
-      })}
+      } as Record<string, unknown>)}
       
       {isVisible && (
         <div

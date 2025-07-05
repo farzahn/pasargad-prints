@@ -728,7 +728,13 @@ export const useAccessibility = () => {
     document.body.appendChild(announcement);
     
     setTimeout(() => {
-      document.body.removeChild(announcement);
+      try {
+        if (document.body.contains(announcement)) {
+          announcement.remove();
+        }
+      } catch (error) {
+        console.debug('Announcement cleanup error:', error);
+      }
     }, 1000);
   };
 

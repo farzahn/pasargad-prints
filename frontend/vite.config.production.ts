@@ -2,12 +2,15 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
-import path from 'path'
+import { createHtmlPlugin } from 'vite-plugin-html'
+import { compression } from 'vite-plugin-compression'
+import { resolve } from 'path'
+import pwaConfig from './vite.config.sw'
 
 // Production-optimized Vite configuration
 export default defineConfig(({ command, mode }) => {
   // Load env from root directory
-  const env = loadEnv(mode, path.resolve(__dirname, '..'), '')
+  const env = loadEnv(mode, resolve(__dirname, '..'), '')
   const isProduction = mode === 'production'
   
   return {
@@ -20,90 +23,71 @@ export default defineConfig(({ command, mode }) => {
         }
       }),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'icon-192x192.png', 'icon-512x512.png'],
-        manifest: {
-          name: 'Pasargad Prints - 3D Printing Store',
-          short_name: 'Pasargad Prints',
-          description: 'Premium 3D printing products and services',
-          theme_color: '#2563eb',
-          background_color: '#ffffff',
-          display: 'standalone',
-          scope: '/',
-          start_url: '/',
-          icons: [
-            {
-              src: '/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable'
-            },
-            {
-              src: '/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ]
-        },
+        ...pwaConfig,
+        // Override for production-specific settings
+        disable: false,
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
-          maximumFileSizeToCacheInBytes: 5000000, // 5MB
-          skipWaiting: true,
-          clientsClaim: true,
-          cleanupOutdatedCaches: true,
+          ...pwaConfig.workbox,
+          // Production-specific runtime caching overrides
           runtimeCaching: [
+            // Use environment-specific API URL
             {
-              urlPattern: /^https:\/\/api\./i,
+              urlPattern: new RegExp(`^${env.VITE_API_URL || 'https://api.pasargadprints.com'}/.*$`),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'api-cache',
                 expiration: {
-                  maxEntries: 50,
+                  maxEntries: 100,
                   maxAgeSeconds: 5 * 60 // 5 minutes
                 },
                 cacheableResponse: {
-                  statuses: [0, 200]
+                  statuses: [0, 200, 404]
                 },
-                networkTimeoutSeconds: 3
+                networkTimeoutSeconds: 10
               }
             },
-            {
-              urlPattern: /\.(png|jpg|jpeg|svg|webp|avif)$/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'image-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-                }
-              }
-            },
-            {
-              urlPattern: /\.(woff|woff2|eot|ttf|otf)$/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'font-cache',
-                expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
-                }
-              }
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'google-fonts',
-                expiration: {
-                  maxEntries: 20,
-                  maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
-                }
-              }
-            }
+            ...pwaConfig.workbox?.runtimeCaching?.slice(1) || []
           ]
         }
       }),
+      // HTML processing plugin
+      createHtmlPlugin({
+        minify: isProduction,
+        inject: {
+          data: {
+            title: 'Pasargad Prints - Premium 3D Printing Store',
+            description: 'Discover high-quality 3D printing products, materials, and services at Pasargad Prints.',
+            googleAnalyticsId: env.VITE_GOOGLE_ANALYTICS_ID || '',
+            googleTagManagerId: env.VITE_GOOGLE_TAG_MANAGER_ID || '',
+            buildTime: new Date().toISOString(),
+            version: process.env.npm_package_version || '1.0.0'
+          }
+        }
+      }),
+
+      // Compression plugins
+      isProduction && compression({
+        algorithm: 'gzip',
+        ext: '.gz',
+        deleteOriginFile: false,
+        threshold: 1024,
+        compressionOptions: {
+          level: 9
+        }
+      }),
+
+      isProduction && compression({
+        algorithm: 'brotliCompress',
+        ext: '.br',
+        deleteOriginFile: false,
+        threshold: 1024,
+        compressionOptions: {
+          params: {
+            [require('zlib').constants.BROTLI_PARAM_QUALITY]: 11
+          }
+        }
+      }),
+
       // Bundle analyzer for production builds
       isProduction && visualizer({
         filename: 'dist/stats.html',
@@ -132,51 +116,155 @@ export default defineConfig(({ command, mode }) => {
         compress: {
           drop_console: true,
           drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug'],
-          passes: 2
+          pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+          passes: 3,
+          unsafe: true,
+          unsafe_comps: true,
+          unsafe_math: true,
+          unsafe_symbols: true,
+          unsafe_methods: true,
+          unsafe_proto: true,
+          unsafe_regexp: true,
+          conditionals: true,
+          dead_code: true,
+          evaluate: true,
+          if_return: true,
+          join_vars: true,
+          loops: true,
+          negate_iife: true,
+          properties: true,
+          reduce_vars: true,
+          sequences: true,
+          side_effects: false,
+          switches: true,
+          top_retain: null,
+          typeofs: true,
+          unused: true,
+          arguments: true,
+          booleans: true,
+          collapse_vars: true,
+          comparisons: true,
+          hoist_funs: true,
+          hoist_props: true,
+          hoist_vars: false,
+          inline: true,
+          keep_infinity: false,
+          toplevel: true
         },
         mangle: {
-          safari10: true
+          safari10: true,
+          toplevel: true,
+          properties: {
+            regex: /^_/
+          }
         },
         format: {
-          comments: false
+          comments: false,
+          ecma: 2020,
+          safari10: true
         }
       } : undefined,
       rollupOptions: {
+        treeshake: {
+          moduleSideEffects: false,
+          propertyReadSideEffects: false,
+          tryCatchDeoptimization: false,
+          unknownGlobalSideEffects: false
+        },
         output: {
           manualChunks(id) {
-            // Vendor chunks
+            // Core React chunk (most frequently used)
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core'
+            }
+            
+            // Store and state management
+            if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
+              return 'store-vendor'
+            }
+            
+            // Router chunk
+            if (id.includes('react-router')) {
+              return 'router-vendor'
+            }
+            
+            // UI Library chunks
+            if (id.includes('react-toastify') || id.includes('react-hook-form') || id.includes('@hookform')) {
+              return 'ui-vendor'
+            }
+            
+            // Charts and visualization
+            if (id.includes('recharts') || id.includes('d3-')) {
+              return 'charts-vendor'
+            }
+            
+            // Payment processing
+            if (id.includes('@stripe')) {
+              return 'payment-vendor'
+            }
+            
+            // HTTP client and API
+            if (id.includes('axios')) {
+              return 'api-vendor'
+            }
+            
+            // Form validation
+            if (id.includes('zod') || id.includes('yup')) {
+              return 'validation-vendor'
+            }
+            
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'date-vendor'
+            }
+            
+            // PDF and document processing
+            if (id.includes('jspdf') || id.includes('xlsx') || id.includes('file-saver')) {
+              return 'document-vendor'
+            }
+            
+            // Admin functionality (lazy loaded)
+            if (id.includes('/src/pages/admin/') || id.includes('/src/components/admin/')) {
+              return 'admin'
+            }
+            
+            // E-commerce specific features
+            if (id.includes('/src/pages/') && (id.includes('Checkout') || id.includes('Cart'))) {
+              return 'checkout'
+            }
+            
+            // Product related features
+            if (id.includes('/src/pages/') && (id.includes('Product') || id.includes('Wishlist'))) {
+              return 'product'
+            }
+            
+            // Authentication features
+            if (id.includes('/src/pages/') && (id.includes('Login') || id.includes('Register') || id.includes('Profile'))) {
+              return 'auth'
+            }
+            
+            // Other vendor libraries
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'react-vendor'
-              }
-              if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
-                return 'store-vendor'
-              }
-              if (id.includes('react-router')) {
-                return 'router-vendor'
-              }
-              if (id.includes('recharts') || id.includes('d3-')) {
-                return 'charts-vendor'
-              }
-              if (id.includes('react-toastify') || id.includes('react-hook-form') || id.includes('@hookform')) {
-                return 'ui-vendor'
-              }
-              if (id.includes('axios') || id.includes('@stripe')) {
-                return 'api-vendor'
+              // Group smaller libraries together
+              if (id.includes('tslib') || id.includes('scheduler') || id.includes('object-assign')) {
+                return 'polyfill-vendor'
               }
               return 'vendor'
             }
             
-            // Feature-based chunks
-            if (id.includes('/src/pages/admin/')) {
-              return 'admin'
+            // Utility functions
+            if (id.includes('/src/utils/')) {
+              return 'utils'
             }
-            if (id.includes('/src/pages/') && (id.includes('Checkout') || id.includes('Cart'))) {
-              return 'checkout'
+            
+            // Store slices
+            if (id.includes('/src/store/')) {
+              return 'store'
             }
-            if (id.includes('/src/components/admin/')) {
-              return 'admin-components'
+            
+            // Services
+            if (id.includes('/src/services/')) {
+              return 'services'
             }
           },
           chunkFileNames: (chunkInfo) => {
@@ -208,14 +296,21 @@ export default defineConfig(({ command, mode }) => {
         external: isProduction ? [] : undefined
       },
       // Asset optimization
-      assetsInlineLimit: 4096, // 4KB
+      assetsInlineLimit: 4096, // 4KB inline limit
       cssCodeSplit: true,
-      cssMinify: isProduction,
-      // Performance
+      cssMinify: isProduction ? 'esbuild' : false,
+      // Performance optimizations
       reportCompressedSize: isProduction,
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 800, // Stricter chunk size limits
       // Improve build performance
-      emptyOutDir: true
+      emptyOutDir: true,
+      // Enable incremental builds
+      watch: !isProduction ? {
+        buildDelay: 100,
+        exclude: ['node_modules/**', 'dist/**']
+      } : undefined,
+      // Additional build optimizations
+      maxParallelFileOps: 4
     },
 
     // Server configuration

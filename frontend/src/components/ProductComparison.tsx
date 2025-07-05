@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
-import type { AppDispatch, RootState } from '../store/index'
+import type { AppDispatch } from '../store/index'
 import {
   selectComparisonProducts,
   selectIsComparisonOpen,
@@ -36,11 +36,11 @@ const ProductComparison = () => {
 
   // Get all unique attributes for comparison
   const attributes = [
-    { key: 'price', label: 'Price', format: (val: any) => `$${val}` },
+    { key: 'price', label: 'Price', format: (val: string) => `$${val}` },
     { key: 'category_name', label: 'Category' },
-    { key: 'average_rating', label: 'Rating', format: (val: any) => `${val.toFixed(1)} ★` },
+    { key: 'average_rating', label: 'Rating', format: (val: number) => `${val.toFixed(1)} ★` },
     { key: 'review_count', label: 'Reviews' },
-    { key: 'is_in_stock', label: 'Availability', format: (val: any) => val ? 'In Stock' : 'Out of Stock' },
+    { key: 'is_in_stock', label: 'Availability', format: (val: boolean) => val ? 'In Stock' : 'Out of Stock' },
   ]
 
   return (
@@ -133,8 +133,8 @@ const ProductComparison = () => {
                   {products.map(product => (
                     <td key={product.id} className="px-4 py-3 text-sm text-center text-gray-900">
                       {attr.format
-                        ? attr.format((product as any)[attr.key])
-                        : (product as any)[attr.key]
+                        ? attr.format(product[attr.key as keyof typeof product])
+                        : product[attr.key as keyof typeof product]
                       }
                     </td>
                   ))}

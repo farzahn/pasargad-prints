@@ -88,10 +88,26 @@ export const selectActiveBanners = (state: RootState) => {
   ).sort((a, b) => b.priority - a.priority)
 }
 
-export const selectBannersByPosition = (state: RootState, position: Banner['position']) =>
-  selectActiveBanners(state).filter(banner => banner.position === position)
+export const selectBannersByPosition = (state: RootState) => {
+  const banners = selectActiveBanners(state)
+  return banners.reduce((acc, banner) => {
+    if (!acc[banner.position]) {
+      acc[banner.position] = []
+    }
+    acc[banner.position].push(banner)
+    return acc
+  }, {} as Record<Banner['position'], Banner[]>)
+}
 
-export const selectBannersByType = (state: RootState, type: Banner['banner_type']) =>
-  selectActiveBanners(state).filter(banner => banner.banner_type === type)
+export const selectBannersByType = (state: RootState) => {
+  const banners = selectActiveBanners(state)
+  return banners.reduce((acc, banner) => {
+    if (!acc[banner.banner_type]) {
+      acc[banner.banner_type] = []
+    }
+    acc[banner.banner_type].push(banner)
+    return acc
+  }, {} as Record<Banner['banner_type'], Banner[]>)
+}
 
 export default bannersSlice.reducer

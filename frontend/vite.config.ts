@@ -6,7 +6,7 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file from parent directory (root of the project)
-  const env = loadEnv(mode, resolve(process.cwd(), '..'), '')
+  const _env = loadEnv(mode, resolve(process.cwd(), '..'), '')
   
   return {
   plugins: [

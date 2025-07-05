@@ -97,7 +97,7 @@ class PerformanceMonitor {
       try {
         const fidObserver = new PerformanceObserver((entryList) => {
           const entries = entryList.getEntries();
-          const fidEntry = entries[0];
+          const fidEntry = entries[0] as any;
           if (fidEntry) {
             this.metrics.fid = fidEntry.processingStart - fidEntry.startTime;
             this.metrics.firstInteraction = fidEntry.startTime;
@@ -173,8 +173,8 @@ class PerformanceMonitor {
         
         if (navigation) {
           this.metrics.ttfb = navigation.responseStart - navigation.requestStart;
-          this.metrics.loadTime = navigation.loadEventEnd - navigation.navigationStart;
-          this.metrics.domContentLoaded = navigation.domContentLoadedEventEnd - navigation.navigationStart;
+          this.metrics.loadTime = navigation.loadEventEnd - (navigation as any).navigationStart;
+          this.metrics.domContentLoaded = navigation.domContentLoadedEventEnd - (navigation as any).navigationStart;
         }
       }, 0);
     });
@@ -342,8 +342,15 @@ export class ResourceOptimizer {
 }
 
 // Memory usage monitoring
+export interface MemoryUsage {
+  timestamp: number;
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
 export class MemoryMonitor {
-  private memoryUsage: number[] = [];
+  private memoryUsage: MemoryUsage[] = [];
   private interval: number | null = null;
 
   startMonitoring(intervalMs: number = 10000): void {
@@ -369,13 +376,13 @@ export class MemoryMonitor {
     }
   }
 
-  getMemoryUsage(): number[] {
+  getMemoryUsage(): MemoryUsage[] {
     return [...this.memoryUsage];
   }
 
   getAverageMemoryUsage(): number {
     if (this.memoryUsage.length === 0) return 0;
-    const total = this.memoryUsage.reduce((sum, usage) => sum + (usage as any).usedJSHeapSize, 0);
+    const total = this.memoryUsage.reduce((sum, usage) => sum + usage.usedJSHeapSize, 0);
     return total / this.memoryUsage.length;
   }
 }

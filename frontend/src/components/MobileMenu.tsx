@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import type { User } from '../types';
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
-  user: any;
+  user: User | null;
   cartItemCount: number;
   onLogout: () => void;
 }

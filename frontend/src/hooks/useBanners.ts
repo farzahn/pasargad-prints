@@ -13,17 +13,19 @@ export const useBanners = () => {
   const dispatch = useDispatch<AppDispatch>()
   const loading = useSelector((state: RootState) => state.banners.loading)
   const error = useSelector((state: RootState) => state.banners.error)
+  const bannersByPosition = useSelector(selectBannersByPosition)
+  const bannersByType = useSelector(selectBannersByType)
 
   useEffect(() => {
     dispatch(fetchBanners())
   }, [dispatch])
 
   const getBannersByPosition = (position: Banner['position']) => {
-    return useSelector((state: RootState) => selectBannersByPosition(state, position))
+    return bannersByPosition[position] || []
   }
 
   const getBannersByType = (type: Banner['banner_type']) => {
-    return useSelector((state: RootState) => selectBannersByType(state, type))
+    return bannersByType[type] || []
   }
 
   const handleDismissBanner = (bannerId: number) => {

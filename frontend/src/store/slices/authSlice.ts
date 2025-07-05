@@ -27,10 +27,15 @@ const initialState: AuthState = {
 export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string; rememberUsername?: boolean }) => {
+    console.log('🔍 loginUser called with:', credentials)
+    console.log('🔍 Making API call to:', '/api/users/auth/login/')
+    
     const response = await api.post('/api/users/auth/login/', {
       email: credentials.email,
       password: credentials.password,
     })
+    
+    console.log('🔍 Login API response:', response.data)
     
     // Store tokens
     localStorage.setItem('accessToken', response.data.access)
@@ -104,22 +109,31 @@ export const registerUser = createAsyncThunk(
       localStorage.setItem('refreshToken', response.data.tokens.refresh)
       
       return response.data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log('🔍 authSlice - Registration error:', error)
-      console.log('🔍 authSlice - Error response:', error.response?.data)
-      console.log('🔍 authSlice - Error status:', error.response?.status)
+      
+      const axiosError = error as {
+        response?: {
+          data?: Record<string, unknown>;
+          status?: number;
+        };
+        message?: string;
+      };
+      
+      console.log('🔍 authSlice - Error response:', axiosError.response?.data)
+      console.log('🔍 authSlice - Error status:', axiosError.response?.status)
       
       // Return detailed error information
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message || 
-                          Object.values(error.response?.data || {}).flat().join(', ') ||
-                          error.message || 
+      const errorMessage = (axiosError.response?.data as Record<string, unknown>)?.detail as string || 
+                          (axiosError.response?.data as Record<string, unknown>)?.message as string || 
+                          Object.values(axiosError.response?.data || {}).flat().join(', ') ||
+                          axiosError.message || 
                           'Registration failed'
       
       return rejectWithValue({
         message: errorMessage,
-        status: error.response?.status,
-        data: error.response?.data
+        status: axiosError.response?.status,
+        data: axiosError.response?.data
       })
     }
   }
@@ -143,7 +157,7 @@ export const refreshAccessToken = createAsyncThunk(
       localStorage.setItem('accessToken', response.data.access)
       
       return response.data
-    } catch (error) {
+    } catch {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       return rejectWithValue('Token refresh failed')
@@ -229,7 +243,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false
-        state.error = (action.payload as any)?.message || action.error.message || 'Registration failed'
+        state.error = (action.payload as { message?: string })?.message || action.error.message || 'Registration failed'
       })
       
       // Refresh token

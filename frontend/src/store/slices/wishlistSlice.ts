@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import api from '../../services/api'
 import type { Wishlist, WishlistItem, ApiError } from '../../types'
 import type { RootState } from '../index'
@@ -24,10 +24,11 @@ export const fetchWishlist = createAsyncThunk<Wishlist, void, { rejectValue: Api
     try {
       const response = await api.get('/api/wishlist/')
       return response.data
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { detail?: string }; status?: number } };
       return rejectWithValue({
-        message: error.response?.data?.detail || 'Failed to fetch wishlist',
-        status: error.response?.status,
+        message: axiosError.response?.data?.detail || 'Failed to fetch wishlist',
+        status: axiosError.response?.status,
       })
     }
   }
@@ -41,10 +42,11 @@ export const addToWishlist = createAsyncThunk<
   try {
     const response = await api.post('/api/wishlist/items/', { product_id })
     return response.data
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { data?: { detail?: string }; status?: number } };
     return rejectWithValue({
-      message: error.response?.data?.detail || 'Failed to add to wishlist',
-      status: error.response?.status,
+      message: axiosError.response?.data?.detail || 'Failed to add to wishlist',
+      status: axiosError.response?.status,
     })
   }
 })
@@ -57,10 +59,11 @@ export const removeFromWishlist = createAsyncThunk<
   try {
     await api.delete(`/api/wishlist/items/${item_id}/`)
     return { id: item_id }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { data?: { detail?: string }; status?: number } };
     return rejectWithValue({
-      message: error.response?.data?.detail || 'Failed to remove from wishlist',
-      status: error.response?.status,
+      message: axiosError.response?.data?.detail || 'Failed to remove from wishlist',
+      status: axiosError.response?.status,
     })
   }
 })
@@ -70,10 +73,11 @@ export const clearWishlist = createAsyncThunk<void, void, { rejectValue: ApiErro
   async (_, { rejectWithValue }) => {
     try {
       await api.delete('/api/wishlist/')
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { detail?: string }; status?: number } };
       return rejectWithValue({
-        message: error.response?.data?.detail || 'Failed to clear wishlist',
-        status: error.response?.status,
+        message: axiosError.response?.data?.detail || 'Failed to clear wishlist',
+        status: axiosError.response?.status,
       })
     }
   }

@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Mock environment variables for tests
 Object.defineProperty(window, 'matchMedia', {

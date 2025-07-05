@@ -159,6 +159,7 @@ export interface Order {
   shipping_cost: string
   total_amount: string
   tracking_number?: string
+  goshippo_order_id?: string
   notes?: string
   created_at: string
   updated_at: string

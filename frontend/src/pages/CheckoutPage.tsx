@@ -81,7 +81,15 @@ const CheckoutPage = () => {
             link.style.display = 'none'
             document.body.appendChild(link)
             link.click()
-            setTimeout(() => document.body.removeChild(link), 100)
+            setTimeout(() => {
+              try {
+                if (document.body.contains(link)) {
+                  link.remove()
+                }
+              } catch (error) {
+                console.debug('Redirect link cleanup error:', error)
+              }
+            }, 100)
           }
         }
 

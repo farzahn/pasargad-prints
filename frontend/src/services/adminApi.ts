@@ -73,6 +73,37 @@ export const adminApi = {
     return response.data
   },
 
+  // Goshippo Integration
+  createGoshippoShipment: async (id: number): Promise<{
+    shipment_id: string;
+    rates: Array<{
+      object_id: string;
+      provider: string;
+      servicelevel: string;
+      amount: string;
+      currency: string;
+      estimated_days: number;
+    }>;
+    status: string;
+    messages: Array<any>;
+  }> => {
+    const response = await api.post(`/api/orders/${id}/shipment/`)
+    return response.data
+  },
+
+  purchaseGoshippoLabel: async (id: number, rate_id: string): Promise<{
+    transaction_id: string;
+    tracking_number: string;
+    label_url: string;
+    tracking_url: string;
+    eta: string;
+    status: string;
+    messages: Array<any>;
+  }> => {
+    const response = await api.post(`/api/orders/${id}/label/`, { rate_id })
+    return response.data
+  },
+
   // Products Management
   getProducts: async (filters?: { category?: number; search?: string; is_active?: boolean }): Promise<ApiResponse<Product>> => {
     const params = new URLSearchParams()
@@ -111,6 +142,34 @@ export const adminApi = {
   updateStock: async (id: number, stock_quantity: number): Promise<ProductDetail> => {
     const response = await api.patch(`/api/admin/products/${id}/stock/`, { stock_quantity })
     return response.data
+  },
+
+  // Categories Management
+  getCategories: async (): Promise<any[]> => {
+    const response = await api.get('/api/admin/products/categories/')
+    return response.data
+  },
+
+  createCategory: async (categoryData: { name: string; description?: string; is_active?: boolean }): Promise<any> => {
+    const response = await api.post('/api/admin/products/categories/create/', categoryData)
+    return response.data
+  },
+
+  // Product Image Management
+  uploadProductImage: async (productId: number, imageFile: File, altText?: string, isMain?: boolean): Promise<any> => {
+    const formData = new FormData()
+    formData.append('image', imageFile)
+    if (altText) formData.append('alt_text', altText)
+    if (isMain) formData.append('is_main', isMain.toString())
+
+    const response = await api.post(`/api/admin/products/${productId}/images/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data
+  },
+
+  deleteProductImage: async (productId: number, imageId: number): Promise<void> => {
+    await api.delete(`/api/admin/products/${productId}/images/${imageId}/`)
   },
 
   // Users Management

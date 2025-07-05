@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { api } from '../../services/apiConfig'
-import type { Product, Category, ProductDetail, ApiResponse } from '../../types'
+import type { Product, Category, ProductDetail } from '../../types'
 
 
 export interface ProductsState {
@@ -42,7 +42,7 @@ const initialState: ProductsState = {
 // Async thunks
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
-  async (params?: Record<string, any>, { rejectWithValue }) => {
+  async (params: Record<string, unknown> = {}, { rejectWithValue }) => {
     try {
       const searchParams = new URLSearchParams()
       if (params) {
@@ -55,8 +55,9 @@ export const fetchProducts = createAsyncThunk(
       
       const response = await api.get(`/api/products/?${searchParams.toString()}`)
       return response.data
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch products')
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { detail?: string } }; message?: string };
+      return rejectWithValue(axiosError.response?.data?.detail || axiosError.message || 'Failed to fetch products')
     }
   }
 )
@@ -76,8 +77,9 @@ export const fetchCategories = createAsyncThunk(
     try {
       const response = await api.get('/api/products/categories/')
       return response.data
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch categories')
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { detail?: string } }; message?: string };
+      return rejectWithValue(axiosError.response?.data?.detail || axiosError.message || 'Failed to fetch categories')
     }
   }
 )

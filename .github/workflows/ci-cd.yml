@@ -1,20 +1,29 @@
-name: CI/CD Pipeline
+name: Pasargad Prints CI/CD Pipeline
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test-frontend:
+  # Frontend Testing and Linting
+  frontend-tests:
+    name: Frontend Tests & Linting
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -23,42 +32,45 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci --legacy-peer-deps
+      - name: Install dependencies
+        run: npm ci
       
-      - name: Run frontend linting
-        run: |
-          cd frontend
-          npm run lint
+      - name: Run ESLint
+        run: npm run lint
       
-      - name: Run frontend type checking
-        run: |
-          cd frontend
-          npm run type-check
+      - name: Run TypeScript type checking
+        run: npm run type-check
       
-      - name: Run frontend tests
-        run: |
-          cd frontend
-          npm run test
-      
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build:prod
+      - name: Run tests
+        run: npm test
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+          CI: true
+      
+      - name: Test build
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:8000
+          VITE_API_BASE_URL: http://localhost:8000
+          VITE_STRIPE_PUBLISHABLE_KEY: pk_test_dummy_key_for_ci
+          VITE_ENABLE_DARK_MODE: true
+          VITE_ENABLE_WISHLIST: true
+          VITE_ENABLE_PRODUCT_COMPARISON: true
 
-  test-backend:
+  # Backend Testing
+  backend-tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -66,69 +78,335 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
       
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
-          cd backend
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run backend tests
-        run: |
-          cd backend
-          python manage.py test
+      - name: Run Django system checks
+        run: python manage.py check
         env:
+          SECRET_KEY: test-secret-key-for-ci-only
+          DEBUG: False
           DB_NAME: test_db
           DB_USER: postgres
           DB_PASSWORD: postgres
           DB_HOST: localhost
           DB_PORT: 5432
-          SECRET_KEY: test-secret-key
+          REDIS_URL: redis://localhost:6379/1
+          USE_REDIS_CACHE: True
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          GOSHIPPO_API_KEY: shippo_test_dummy_key_for_ci
+          EMAIL_HOST_USER: test@example.com
+          EMAIL_HOST_PASSWORD: test_password
+      
+      - name: Run migrations
+        run: python manage.py migrate
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
           DEBUG: False
+          DB_NAME: test_db
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/1
+          USE_REDIS_CACHE: True
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          GOSHIPPO_API_KEY: shippo_test_dummy_key_for_ci
+          EMAIL_HOST_USER: test@example.com
+          EMAIL_HOST_PASSWORD: test_password
+      
+      - name: Run tests
+        run: python manage.py test --verbosity=2
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
+          DEBUG: False
+          DB_NAME: test_db
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/1
+          USE_REDIS_CACHE: True
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          GOSHIPPO_API_KEY: shippo_test_dummy_key_for_ci
+          EMAIL_HOST_USER: test@example.com
+          EMAIL_HOST_PASSWORD: test_password
 
-  build-and-deploy:
-    needs: [test-frontend, test-backend]
+  # Docker Integration Test
+  docker-integration:
+    name: Docker Integration Test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    needs: [frontend-tests, backend-tests]
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: Create .env file
+      - name: Create test .env file
         run: |
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "DEBUG=False" >> .env
-          echo "STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}" >> .env
-          echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" >> .env
-          echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> .env
-          echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> .env
-          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env
-          echo "VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" >> .env
+          cat > .env << EOF
+          SECRET_KEY=test-secret-key-for-docker-ci
+          DEBUG=False
+          NODE_ENV=production
+          DB_NAME=pasargad_prints
+          DB_USER=postgres
+          DB_PASSWORD=postgres
+          DB_HOST=db
+          DB_PORT=5432
+          VITE_API_URL=http://localhost:8000
+          VITE_API_BASE_URL=http://localhost:8000
+          FRONTEND_URL=http://localhost:3000
+          STRIPE_PUBLISHABLE_KEY=pk_test_dummy_key_for_ci
+          STRIPE_SECRET_KEY=sk_test_dummy_key_for_ci
+          VITE_STRIPE_PUBLISHABLE_KEY=pk_test_dummy_key_for_ci
+          EMAIL_HOST_USER=test@example.com
+          EMAIL_HOST_PASSWORD=test_password
+          DEFAULT_FROM_EMAIL=noreply@pasargadprints.com
+          GOSHIPPO_API_KEY=shippo_test_dummy_key_for_ci
+          GOSHIPPO_TEST_MODE=True
+          BUSINESS_NAME=Pasargad Prints
+          BUSINESS_ADDRESS=123 Main Street
+          BUSINESS_CITY=New York
+          BUSINESS_STATE=NY
+          BUSINESS_ZIP=10001
+          BUSINESS_COUNTRY=US
+          BUSINESS_PHONE=+1-555-123-4567
+          BUSINESS_EMAIL=shipping@pasargadprints.com
+          USE_REDIS_CACHE=True
+          REDIS_URL=redis://redis:6379/1
+          USE_CDN=False
+          USE_S3=False
+          VITE_ENABLE_DARK_MODE=true
+          VITE_ENABLE_WISHLIST=true
+          VITE_ENABLE_PRODUCT_COMPARISON=true
+          EOF
       
       - name: Build Docker images
-        run: |
-          docker-compose -f docker-compose.production.yml build
+        run: docker-compose build
       
-      - name: Deploy to production
+      - name: Start services
+        run: docker-compose up -d
+      
+      - name: Wait for services to be ready
         run: |
-          # Add your deployment commands here
-          # This could be deploying to a cloud service, updating containers, etc.
-          echo "Deployment would happen here"
+          echo "Waiting for database to be ready..."
+          timeout 60 bash -c 'until docker-compose exec -T db pg_isready -U postgres; do sleep 2; done'
+          echo "Waiting for backend to be ready..."
+          timeout 60 bash -c 'until curl -f http://localhost:8000/api/health/ || docker-compose logs backend; do sleep 5; done'
+          echo "Waiting for frontend to be ready..."
+          timeout 60 bash -c 'until curl -f http://localhost:3000 || docker-compose logs frontend; do sleep 5; done'
+      
+      - name: Run database migrations
+        run: docker-compose exec -T backend python manage.py migrate
+      
+      - name: Test API endpoints
+        run: |
+          # Test admin endpoint (should exist)
+          curl -f http://localhost:8000/admin/ || (echo "Admin endpoint check failed" && exit 1)
           
-      # Optional: Deploy to staging environment for testing
-      - name: Deploy to staging
-        if: github.ref == 'refs/heads/develop'
+          # Test products endpoint
+          curl -f http://localhost:8000/api/products/ || (echo "Products API failed" && exit 1)
+          
+          # Test frontend is serving
+          curl -f http://localhost:3000 || (echo "Frontend not serving" && exit 1)
+      
+      - name: Show logs on failure
+        if: failure()
         run: |
-          echo "Staging deployment would happen here"
+          echo "=== Backend Logs ==="
+          docker-compose logs backend
+          echo "=== Frontend Logs ==="
+          docker-compose logs frontend
+          echo "=== Database Logs ==="
+          docker-compose logs db
+          echo "=== Redis Logs ==="
+          docker-compose logs redis
+      
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
+
+  # Security and Code Quality
+  security-scan:
+    name: Security & Code Quality
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Build and Push Container Images (only on main branch)
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests, docker-integration]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+      
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+
+  # Deploy to Staging (on develop branch)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests, docker-integration]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to staging environment
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "This would typically involve:"
+          echo "- Updating staging server with new code"
+          echo "- Running migrations on staging database"
+          echo "- Updating environment variables"
+          echo "- Restarting services"
+          echo "- Running smoke tests"
+          
+          # Add your actual staging deployment commands here
+          # Examples:
+          # - SSH to staging server and pull latest code
+          # - Update Docker containers on staging
+          # - Deploy to cloud provider (AWS, GCP, Azure, etc.)
+          # - Update Kubernetes deployments
+          
+      - name: Run staging smoke tests
+        run: |
+          echo "🧪 Running staging smoke tests..."
+          # Add smoke tests for staging environment
+          # curl -f https://staging.pasargadprints.com/api/health/
+          # curl -f https://staging.pasargadprints.com/
+
+  # Deploy to Production (on main branch, manual approval)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to production environment
+        run: |
+          echo "🚀 Deploying to production environment..."
+          echo "This would typically involve:"
+          echo "- Blue-green deployment strategy"
+          echo "- Database migrations (if needed)"
+          echo "- Cache warming"
+          echo "- Health checks"
+          echo "- Rollback plan activation"
+          
+          # Add your actual production deployment commands here
+          # Examples:
+          # - Deploy to cloud provider with zero-downtime strategy
+          # - Update load balancer configuration
+          # - Update CDN cache
+          # - Send deployment notifications
+      
+      - name: Run production health checks
+        run: |
+          echo "🔍 Running production health checks..."
+          # Add production health checks
+          # curl -f https://pasargadprints.com/api/health/
+          # curl -f https://pasargadprints.com/
+      
+      - name: Notify deployment success
+        run: |
+          echo "✅ Production deployment successful!"
+          # Add notification logic (Slack, email, etc.)

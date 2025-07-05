@@ -46,6 +46,7 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔍 Login form submitted with:', formData)
     dispatch(loginUser(formData))
   }
 
@@ -58,6 +59,11 @@ const LoginPage = () => {
           </div>
           <h2 className="text-2xl font-bold">Welcome Back!</h2>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-800 font-medium">Demo Credentials:</p>
+            <p className="text-xs text-blue-700">Email: admin@pasargadprints.com</p>
+            <p className="text-xs text-blue-700">Password: admin123</p>
+          </div>
         </div>
 
         {error && (

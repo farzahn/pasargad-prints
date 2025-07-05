@@ -1,8 +1,10 @@
 import { api } from './apiConfig'
+import type { Store } from '@reduxjs/toolkit'
+import type { RootState } from '../store/index'
 
-let storeInstance: any = null
+let storeInstance: Store<RootState> | null = null
 
-export const setStore = (store: any) => {
+export const setStore = (store: Store<RootState>) => {
   storeInstance = store
 }
 
@@ -33,7 +35,7 @@ api.interceptors.response.use(
       
       try {
         // Import actions dynamically to avoid circular dependency
-        const { refreshAccessToken, logout } = await import('../store/slices/authSlice')
+        const { refreshAccessToken } = await import('../store/slices/authSlice')
         await storeInstance.dispatch(refreshAccessToken())
         const newToken = storeInstance.getState().auth.accessToken
         originalRequest.headers.Authorization = `Bearer ${newToken}`

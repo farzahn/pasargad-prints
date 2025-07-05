@@ -62,6 +62,53 @@ export default function OrdersPage() {
     }
   }
 
+  const handleCreateShipment = async (orderId: number) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/shipment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Shipment created successfully! Shipment ID: ${data.shipment_id}`)
+        dispatch(fetchOrders())
+      } else {
+        const error = await response.json()
+        alert(`Error creating shipment: ${error.error}`)
+      }
+    } catch (error) {
+      alert('Failed to create shipment')
+    }
+  }
+
+  const handlePurchaseLabel = async (orderId: number, rateId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/label/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ rate_id: rateId }),
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Label purchased successfully! Tracking: ${data.tracking_number}`)
+        dispatch(fetchOrders())
+      } else {
+        const error = await response.json()
+        alert(`Error purchasing label: ${error.error}`)
+      }
+    } catch (error) {
+      alert('Failed to purchase label')
+    }
+  }
+
   if (isLoading && orders.length === 0) {
     return <LoadingSpinner />
   }
@@ -320,10 +367,38 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                {/* Add Tracking Number */}
+                {/* Goshippo Shipping Actions */}
+                {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-900 mb-4">Shipping Actions (Goshippo)</h3>
+                    <div className="space-y-3">
+                      {selectedOrder.status === 'processing' && !selectedOrder.tracking_number && (
+                        <button
+                          onClick={() => handleCreateShipment(selectedOrder.id)}
+                          className="w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                        >
+                          Create Goshippo Shipment
+                        </button>
+                      )}
+                      
+                      {selectedOrder.status === 'processing' && selectedOrder.tracking_number && (
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                          <p className="text-sm text-green-800">
+                            <strong>Shipment Created:</strong> Order is ready for label purchase
+                          </p>
+                          <p className="text-xs text-green-600 mt-1">
+                            Tracking: {selectedOrder.tracking_number}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual Tracking Number (fallback) */}
                 {selectedOrder.status === 'shipped' && !selectedOrder.tracking_number && (
                   <div className="mt-6">
-                    <h3 className="font-medium text-gray-900 mb-2">Add Tracking Number</h3>
+                    <h3 className="font-medium text-gray-900 mb-2">Add Tracking Number (Manual)</h3>
                     <div className="flex gap-2">
                       <input
                         type="text"

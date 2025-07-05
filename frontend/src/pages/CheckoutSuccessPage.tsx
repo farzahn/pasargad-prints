@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import api from '../services/api'
@@ -21,18 +21,7 @@ const CheckoutSuccessPage = () => {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const sessionId = searchParams.get('session_id')
-    
-    if (!sessionId) {
-      navigate('/')
-      return
-    }
-
-    verifyPayment(sessionId)
-  }, [searchParams, navigate])
-
-  const verifyPayment = async (sessionId: string) => {
+  const verifyPayment = useCallback(async (sessionId: string) => {
     try {
       const response = await api.get(`/api/payments/verify-checkout-session/?session_id=${sessionId}`)
       
@@ -62,13 +51,24 @@ const CheckoutSuccessPage = () => {
         setTimeout(() => verifyPayment(sessionId), 2000) // Check again in 2 seconds
         return
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error verifying payment:', error)
       setError('Failed to verify payment. Please contact support.')
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [dispatch])
+
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id')
+    
+    if (!sessionId) {
+      navigate('/')
+      return
+    }
+
+    verifyPayment(sessionId)
+  }, [searchParams, navigate, verifyPayment])
 
   if (isLoading) {
     return (

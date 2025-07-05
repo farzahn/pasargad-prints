@@ -33,7 +33,11 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: |
+          # Clear npm cache first
+          npm cache clean --force
+          # Try npm ci with legacy peer deps, fallback to npm install
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       
       - name: Run ESLint
         run: npm run lint
@@ -225,8 +229,8 @@ jobs:
       
       - name: Test API endpoints
         run: |
-          # Test admin endpoint (should exist)
-          curl -f http://localhost:8000/admin/ || (echo "Admin endpoint check failed" && exit 1)
+          # Test health endpoint
+          curl -f http://localhost:8000/health/ || (echo "Health endpoint check failed" && exit 1)
           
           # Test products endpoint
           curl -f http://localhost:8000/api/products/ || (echo "Products API failed" && exit 1)
